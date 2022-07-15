@@ -1,0 +1,296 @@
+c *************************************************************************************************************
+c
+c								PZT Ring Model 3D
+c
+c *************************************************************************************************************
+c
+c DESIGNER		:  		PZFlex
+c MODEL DESCRIPTION	:	PZT Ring Model 3D
+c DATE CREATED		:	07/07/15
+c VERSION		:		1.0
+c
+c *************************************************************************************************************
+
+c The adds a title and description to output files
+titl  pzt_ring	  PZT Ring Model 3D
+
+c Use all cores on machine
+c mp omp * *
+
+c No restart file
+rest no
+
+
+
+c ************************************************************************************************************
+c
+c									MODEL PARAMETERS
+c
+c ************************************************************************************************************
+
+c Define geometry
+symb pzt_or = 10.e-3					/* outside radius of pzt
+symb pzt_ir = 5.e-3					/* inside radius of pzt
+symbx pzt_thk = 2.e-3					/* thickness of PZT
+
+c Define frequnecy and meshing
+symb freqint = 1.e6						/* frequency of interest
+symbx vel = 2000.						/* minimum velocity
+symb nelem = 10							/* number of elements per wavelength
+symb wavelength = $vel / $freqint		/* calculate wavelength
+symb box = $wavelength / $nelem			/* calculate box size for model
+symb freqdamp = $freqint				/* damping frequency, used in damping models
+
+c Electrical
+symb rdamp = 50.						/* damping resistor value (Ohms)
+
+c Runtime
+symb ncycles = 60						/* run model for 20 cycles
+symb nloops = 20						/* plot model to screen this many times
+
+c Calculations
+symb pi = 3.14159265359
+symb pzt_len = 2. * $pi * $pzt_or		/* circumference of disc, making outisde neutral axis
+symb pzt_len4 = $pzt_len / 4.			/* quarter symmetry
+symb pzt_wid = $pzt_or - $pzt_ir
+symb ascal = 4.							/* quarter symmetry
+symb simtime = $ncycles / $freqint		/* total runtime of the model
+
+
+
+c ***********************************************************************************************************
+c
+c								X-Y-Z & I-J-K CO-ORDINATE SYSTEM
+c
+c ***********************************************************************************************************
+
+c Define keypoints in x
+symb #keycord x 1 0. $pzt_len4 							/* this defines x1, x2
+symb #get { idx } rootmax x								/* find max indice for x variables
+
+c Define keypoints in y
+symb #keycord y 1 0. $pzt_thk							/* this defines y1, y2
+symb #get { jdx } rootmax y								/* find max indice for y variables
+
+c Define keypoints in y
+symb #keycord z 1 $pzt_ir $pzt_wid							/* this defines z1, z2
+symb #get { kdx } rootmax z								/* find max indice for z variables
+
+c Define i keypoints
+symb #keyindx i 1 $idx 1 $box
+symb indgrd = $i$idx						/* store maximum i value - ie. number of nodes in i
+
+c Define j keypoints
+symb #keyindx j 1 $jdx 1 $box
+symb jndgrd = $j$jdx						/* store maximum j value - ie. number of nodes in j
+
+c Define k keypoints
+symb #keyindx k 1 $kdx 1 $box
+symb kndgrd = $k$kdx						/* store maximum k value - ie. number of nodes in k
+
+c List symbols
+symb #list
+
+
+
+c ************************************************************************************************************
+c
+c									GRID & GEOM DEFINITION
+c
+c ************************************************************************************************************
+
+c Create grid
+grid $indgrd $jndgrd $kndgrd
+
+c Create cylindrical axis for bend
+axis
+	form angl
+	defn bax cyln 0. 0. 0.		90. 0. 0.
+	end
+
+c Assign geometry
+geom 
+	keypnt $idx $jdx $kdx
+	skew stnd
+	bend bax 0. 0. $z2
+	end
+
+
+
+c **********************************************************************************************************
+c
+c 									MATERIAL PROPERTIES & SITE
+c
+c **********************************************************************************************************
+
+c Read material file
+symb #read pzt_ring.prjmat
+
+c Assign materials to grid
+site
+	regn fpz26
+	end
+
+c Plot the model
+grph
+	line on				/* show node lines
+	mirr x on			/* mirror at minimum x
+	mirr z on			/* mirror at minimum z
+	plot matr			
+	end
+
+term
+
+
+
+c **********************************************************************************************************
+c
+c 									INPUTS & BOUNDARY CONDITIONS 
+c
+c **********************************************************************************************************
+
+c Define external boundary conditions
+boun
+	side xmin symm
+	side xmax symm
+	side ymin free
+	side ymax free
+	side zmin free
+	side zmax free
+	end					
+
+c Define drive function, can be accessed using 'func' argument
+func wvlt $freqint 1.
+
+c Define damping circuit
+circ
+	defn cdamp						/* name of circuit
+	elem rest sers $rdamp			/* create series damping resistor
+	end
+
+c Define piezo solve
+piez
+	
+	/* Define electric window
+	wndo auto piez
+	
+	/* Define top electrode
+	defn top $ascal							/* new electrode called 'top'
+	node $i1 $i2 $j2 $j2 $k1 $k2		/* electrode location
+	conn top cdamp volt func			/* apply 'func' as a voltage
+	
+	/* Define bottom electrode
+	defn bot $ascal	
+	node $i1 $i2 $j1 $j1 $k1 $k2
+	bc bot grnd							/* assign electrical ground
+	end
+
+
+
+
+c ********************************************************************************************************
+c 
+c 									OUTPUTS
+c
+c ********************************************************************************************************
+
+c Properties to calculate
+calc
+	disp					/* produces xdsp, ydsp and zdsp arrays
+	end
+
+c Define frequencies for mode shape calculation
+shap
+	freq 1.e6
+	data ydsp				/* show ydisplacement as colour scale
+	end
+
+c Time histories to store
+pout
+	hist func							/* #1 Drive function
+	histname electrode vq all			/* #2 - #5 Voltage and charge on each electrode
+	end
+
+
+
+c *******************************************************************************************************
+c
+c 									PROCESS MODEL
+c
+c *******************************************************************************************************
+
+c Process model, including setting time step
+prcs                                    
+
+c Plot model
+grph
+	arrow pole				/* plot poling arrows in pzt
+	plot matr piez			/* plot materials and electrodes
+	end
+
+term
+
+
+c *******************************************************************************************************
+c
+c						 			RUN THE MODEL
+c
+c *******************************************************************************************************
+
+c Set up run parameters
+symb #get { step } timestep				/* store timestep size in variable 'step'
+symb nexec = $simtime / $step			/* total number of executions
+symb nexec2 = $nexec / $nloops			/* number of executions in a loop
+
+c Set up graphics
+grph
+	line off							/* don't plot node lines
+	arrow off							/* don't plot poling arrows
+	set imag avi						/* save images to movie
+	nvew 2 2							/* 2 view windows side by side (type 2)
+	end
+
+c Define run/plot procedure
+proc plot save
+
+c Run model for some time
+exec $nexec2
+
+c Calculate displacement magnitude
+calc vmag dmag xdsp ydsp zdsp
+
+c Plot current state of model
+grph
+	plot dmag							/* plot acoustic pressure
+	plot 3								/* plot charge on top electrode
+	imag								/* save plots to movie
+	end
+
+end$ proc								/* end of proc
+
+c Run model
+proc plot $nloops
+
+term
+
+
+
+c *******************************************************************************************************
+c
+c						DATA OUTPUT
+c
+c *******************************************************************************************************
+
+c Save data out file
+data
+	out modl								/* save model geometry for plotting
+	out shap/all							/* save shape info
+	end
+
+c Save symbols
+symb #get { labl } jobname					/* find name of run
+symb #save '$labl.symb'						/* save in symb file
+
+stop								/* return to command prompt
+
+
