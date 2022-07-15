@@ -1,0 +1,150 @@
+{
+    "header": {
+        "file": "Swing_Arm.json",
+        "version": 1,
+        "date": "2020 07 07 09:50:02",
+        "application": "Reflex Visitor",
+        "type": "Reflex JSON Generation"
+    },
+    "physics": [
+        {
+            "physics_type": "Mechanical",
+            "boundary_conditions": [
+                {
+                    "group_names": ["surf_1_341"],
+                    "boundary_condition_type": "ForceLoad",
+                    "value_type": "ConstantValues",
+                    "value": {
+                        "values": [
+                            0,
+                            0,
+                            -1
+                        ],
+                        "scale": "1000"
+                    },
+                    "starting_degree_of_freedom": 0
+                },
+                {
+                    "group_names": ["surf_1_192"],
+                    "boundary_condition_type": "ForceLoad",
+                    "value_type": "ConstantValues",
+                    "value": {
+                        "values": [
+                            0,
+                            0,
+                            -1
+                        ],
+                        "scale": "1000"
+                    },
+                    "starting_degree_of_freedom": 0
+                },
+                {
+                    "group_names": ["surf_1_590"],
+                    "boundary_condition_type": "Dirichlet",
+                    "value_type": "ConstantValues",
+                    "value": {
+                        "values": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": 1.0
+                    },
+                    "degrees_of_freedom": [
+                        0,
+                        1,
+                        2
+                    ]
+                }
+            ],
+            "active": true
+        }
+    ],
+    "mesh_filename": "Swing_Arm.step.bincad.msh",
+    "mesh_coordinate_scale_factor": 0.001,
+    "element_order": 2,
+    "coordinate_systems": [],
+    "materials": [
+        {
+            "name": "alum",
+            "density": 2690,
+            "mechanical_properties": {
+                "elasticity_type": "IsotropicLinearElastic",
+                "elasticity": {
+                    "youngs_modulus": 0.0001,
+                    "poissons_ratio": 0.3387523346583018
+                }
+            }
+        }
+    ],
+    "material_mapping": [
+        {
+            "volume_name": "part_1",
+            "material_name": "alum"
+        }
+    ],
+    "solver": [
+        {
+          "solver_name": "AutomaticSolver1",
+          "solver_type": "preonly",
+          "preconditioner_type": "cholesky"
+        }],
+    "functions": [],
+    "outputs": {
+        "field_data": [
+            {
+                "field_name": "Displacement"
+            },
+            {
+                "field_name": "Stress"
+            },
+            {
+                "field_name": "Strain"
+            },
+            {
+                "field_name": "vonMises"
+            }
+        ],
+        "kpi_data": [
+            {
+                "group_name": "surf_1_590",
+                "filter_name": "ForceResultant"
+            },
+            {
+                "group_name": "surf_1_589",
+                "filter_name": "ForceResultant"
+            },
+            {
+                "group_name": "point_0",
+                "field_name": "Stress"
+            },
+            {
+                "group_name": "point_1",
+                "field_name": "Stress"
+            }
+        ],
+        "kpi_rate": 0,
+        "field_no_of_snapshots": 1,
+        "field_output_type": "VtuComponent",
+        "kpi_output_type": "Json"
+    },
+    "analysis_type": "StaticAnalysis",
+    "points": [
+        {
+            "point_name": "point_0",
+            "coordinates": [
+                0,
+                0,
+                0
+            ]
+        },
+        {
+            "point_name": "point_1",
+            "coordinates": [
+                0.00001,
+                0.00001,
+                0.00001
+            ]
+        }
+    ]
+}
