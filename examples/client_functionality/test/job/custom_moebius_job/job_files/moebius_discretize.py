@@ -57,7 +57,6 @@ def discretize():
 
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
-    numprocs = comm.Get_size()
 
     if rank == 0:
         reader = vtk.vtkXMLPolyDataReader()
@@ -75,10 +74,6 @@ def discretize():
         writer.SetFileName(dVTP)
         writer.SetInputConnection(tF.GetOutputPort())
         writer.Update()
-
-        reader.GetOutput().GetCellData().SetActiveScalars("FaceID")
-        arr = reader.GetOutput().GetCellData().GetScalars()
-        arr_np = vtk.util.numpy_support.numpy_to_vtk(arr)
 
         f = open("/tmp/template.ltu/scale_0/fluid_0/BC/bgkflag.ios", "w")
         f.write("2\n")
