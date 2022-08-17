@@ -29,5 +29,5 @@ jobs:
       if: always()
       with:
         files: ./coverage1.xml
+        token: ${{ secrets.CODECOV_TOKEN }} # not required for public repositories
         fail_ci_if_error: true # optional (default = false)
-        verbose: true # optional (default = false)

@@ -1,9 +1,13 @@
 import pytest
+import os
 from unittest.mock import patch, mock_open
 
 import onscale_client
 from onscale_client.api import datamodel
 
+
+MOCK_DEV_TOKEN = os.environ['MOCK_DEV_TOKEN']
+MOCK_DEV_TOKEN_2 = os.environ['MOCK_DEV_TOKEN_2']
 # pytestmark = pytest.mark.skip("all tests still WIP")
 
 
