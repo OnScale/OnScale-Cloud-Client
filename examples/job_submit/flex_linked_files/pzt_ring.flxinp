@@ -109,7 +109,7 @@ axis
 	end
 
 c Assign geometry
-geom 
+geom
 	keypnt $idx $jdx $kdx
 	skew stnd
 	bend bax 0. 0. $z2
@@ -136,7 +136,7 @@ grph
 	line on				/* show node lines
 	mirr x on			/* mirror at minimum x
 	mirr z on			/* mirror at minimum z
-	plot matr			
+	plot matr
 	end
 
 term
@@ -145,7 +145,7 @@ term
 
 c **********************************************************************************************************
 c
-c 									INPUTS & BOUNDARY CONDITIONS 
+c 									INPUTS & BOUNDARY CONDITIONS
 c
 c **********************************************************************************************************
 
@@ -157,7 +157,7 @@ boun
 	side ymax free
 	side zmin free
 	side zmax free
-	end					
+	end
 
 c Define drive function, can be accessed using 'func' argument
 func wvlt $freqint 1.
@@ -170,17 +170,17 @@ circ
 
 c Define piezo solve
 piez
-	
+
 	/* Define electric window
 	wndo auto piez
-	
+
 	/* Define top electrode
 	defn top $ascal							/* new electrode called 'top'
 	node $i1 $i2 $j2 $j2 $k1 $k2		/* electrode location
 	conn top cdamp volt func			/* apply 'func' as a voltage
-	
+
 	/* Define bottom electrode
-	defn bot $ascal	
+	defn bot $ascal
 	node $i1 $i2 $j1 $j1 $k1 $k2
 	bc bot grnd							/* assign electrical ground
 	end
@@ -189,7 +189,7 @@ piez
 
 
 c ********************************************************************************************************
-c 
+c
 c 									OUTPUTS
 c
 c ********************************************************************************************************
@@ -220,7 +220,7 @@ c
 c *******************************************************************************************************
 
 c Process model, including setting time step
-prcs                                    
+prcs
 
 c Plot model
 grph

@@ -7,7 +7,7 @@ Contents
    :maxdepth: 2
    :caption: Contents:
 
-   modules/account   
+   modules/account
    modules/client
    modules/configure
    modules/estimate_data
@@ -15,7 +15,7 @@ Contents
    modules/job_progress
    modules/job
    modules/simulation
-   
+
 
 Search
 =======

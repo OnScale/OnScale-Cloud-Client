@@ -1,6 +1,6 @@
 name: Pytest
 
-on: 
+on:
   pull_request:
     types: [opened, reopened, edited]
 

@@ -1,122 +1,44 @@
 {
+  "analysis_type": "StaticAnalysis",
+  "coordinate_systems": [],
+  "element_order": 2,
+  "functions": [],
   "header": {
-    "file": "Linekd Files Test.json",
-    "version": 1,
-    "date": "2021 02 04 10:34:05",
     "application": "",
-    "type": ""
+    "date": "2021 02 04 10:34:05",
+    "file": "Linekd Files Test.json",
+    "type": "",
+    "version": 1
   },
-  "physics": [
+  "material_mapping": [
     {
-      "physics_type": "Mechanical",
-      "boundary_conditions": [
-        {
-          "group_names": [
-            "surf_1_28"
-          ],
-          "boundary_condition_type": "Dirichlet",
-          "value_type": "ConstantValues",
-          "value": {
-            "values": [
-              0.0,
-              0.0,
-              0.0
-            ],
-            "scale": 1.0
-          },
-          "degrees_of_freedom": [
-            0,
-            1,
-            2
-          ]
-        },
-        {
-          "group_names": [
-            "surf_1_23"
-          ],
-          "boundary_condition_type": "Dirichlet",
-          "value_type": "ConstantValues",
-          "value": {
-            "values": [
-              0.0,
-              0.0,
-              0.0
-            ],
-            "scale": 1.0
-          },
-          "degrees_of_freedom": [
-            0,
-            1,
-            2
-          ]
-        },
-        {
-          "group_names": [
-            "surf_1_17"
-          ],
-          "boundary_condition_type": "Neumann",
-          "value_type": "ConstantValues",
-          "value": {
-            "values": [
-              1
-            ],
-            "scale": 25000.0
-          },
-          "starting_degree_of_freedom": 0
-        },
-        {
-          "group_names": [
-            "surf_1_11"
-          ],
-          "boundary_condition_type": "Neumann",
-          "value_type": "ConstantValues",
-          "value": {
-            "values": [
-              1
-            ],
-            "scale": 25000.0
-          },
-          "starting_degree_of_freedom": 0
-        }
-      ],
-      "initial_conditions": [],
-      "active": true,
-      "solver_name": "AutomaticSolver1"
+      "material_name": "Alumina",
+      "volume_name": "part_1"
     }
   ],
-  "mesh_filename": "medium_mesh_volume.msh",
-  "mesh_coordinate_scale_factor": 0.001,
-  "element_order": 2,
   "materials": [
     {
-      "name": "Alumina",
       "density": "3900",
       "mechanical_properties": {
-        "elasticity_type": "IsotropicLinearElastic",
         "elasticity": {
-          "youngs_modulus": "300e9",
-          "poissons_ratio": "0.222"
-        }
+          "poissons_ratio": "0.222",
+          "youngs_modulus": "300e9"
+        },
+        "elasticity_type": "IsotropicLinearElastic"
       },
+      "name": "Alumina",
       "thermal_properties": {
-        "thermal_conductivity_type": "IsotropicFourier",
+        "heat_capacity": "900",
         "thermal_conductivity": {
           "thermal_conductivity": "27"
         },
-        "heat_capacity": "900",
+        "thermal_conductivity_type": "IsotropicFourier",
         "thermal_expansion": "8e-6"
       }
     }
   ],
-  "material_mapping": [
-    {
-      "volume_name": "part_1",
-      "material_name": "Alumina"
-    }
-  ],
-  "coordinate_systems": [],
-  "points": [],
-  "functions": [],
+  "mesh_coordinate_scale_factor": 0.001,
+  "mesh_filename": "medium_mesh_volume.msh",
   "outputs": {
     "field_data": [
       {
@@ -138,31 +60,109 @@
         "field_name": "PrincipalStrain"
       }
     ],
-    "kpi_data": [
-      {
-        "group_names": [
-          "surf_1_23"
-        ],
-        "filter_name": "ForceResultant"
-      },
-      {
-        "group_names": [
-          "surf_1_28"
-        ],
-        "filter_name": "ForceResultant"
-      }
-    ],
-    "kpi_rate": 0,
     "field_no_of_snapshots": 1,
     "field_output_type": "VtuTensor",
-    "kpi_output_type": "Json"
+    "kpi_data": [
+      {
+        "filter_name": "ForceResultant",
+        "group_names": [
+          "surf_1_23"
+        ]
+      },
+      {
+        "filter_name": "ForceResultant",
+        "group_names": [
+          "surf_1_28"
+        ]
+      }
+    ],
+    "kpi_output_type": "Json",
+    "kpi_rate": 0
   },
-  "analysis_type": "StaticAnalysis",
+  "physics": [
+    {
+      "active": true,
+      "boundary_conditions": [
+        {
+          "boundary_condition_type": "Dirichlet",
+          "degrees_of_freedom": [
+            0,
+            1,
+            2
+          ],
+          "group_names": [
+            "surf_1_28"
+          ],
+          "value": {
+            "scale": 1.0,
+            "values": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "value_type": "ConstantValues"
+        },
+        {
+          "boundary_condition_type": "Dirichlet",
+          "degrees_of_freedom": [
+            0,
+            1,
+            2
+          ],
+          "group_names": [
+            "surf_1_23"
+          ],
+          "value": {
+            "scale": 1.0,
+            "values": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "value_type": "ConstantValues"
+        },
+        {
+          "boundary_condition_type": "Neumann",
+          "group_names": [
+            "surf_1_17"
+          ],
+          "starting_degree_of_freedom": 0,
+          "value": {
+            "scale": 25000.0,
+            "values": [
+              1
+            ]
+          },
+          "value_type": "ConstantValues"
+        },
+        {
+          "boundary_condition_type": "Neumann",
+          "group_names": [
+            "surf_1_11"
+          ],
+          "starting_degree_of_freedom": 0,
+          "value": {
+            "scale": 25000.0,
+            "values": [
+              1
+            ]
+          },
+          "value_type": "ConstantValues"
+        }
+      ],
+      "initial_conditions": [],
+      "physics_type": "Mechanical",
+      "solver_name": "AutomaticSolver1"
+    }
+  ],
+  "points": [],
   "solver": [
     {
+      "preconditioner_type": "cholesky",
       "solver_name": "AutomaticSolver1",
-      "solver_type": "preonly",
-      "preconditioner_type": "cholesky"
+      "solver_type": "preonly"
     }
   ]
 }

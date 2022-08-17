@@ -1,6 +1,6 @@
-c -------------------------------------------------------------- 
+c --------------------------------------------------------------
 c                   Project Material List
-c -------------------------------------------------------------- 
+c --------------------------------------------------------------
 
 
 c -------------------------------------------------------------------------
@@ -39,11 +39,11 @@ c    Input material properties to program
 c -------------------------------------------------------------------------
 
 matr
-c -------------------------------------------------------------- 
-c type : PIEZO : 
-c name : fpz26 : 
-c desc : Ferroperm PZ26, equiv. Navy Type I, PZT4 : 
-c -------------------------------------------------------------- 
+c --------------------------------------------------------------
+c type : PIEZO :
+c name : fpz26 :
+c desc : Ferroperm PZ26, equiv. Navy Type I, PZT4 :
+c --------------------------------------------------------------
 
 
 c    define baseline dielectric coefficients
@@ -108,7 +108,7 @@ symb aepxx = $epvacm * $epxx
 symb aepyy = $epvacm * $epyy
 symb aepzz = $epvacm * $epzz
 
-     wvsp off 
+     wvsp off
      type lean
 
      prop fpz26 $rho
@@ -125,13 +125,13 @@ symb aepzz = $epvacm * $epzz
      rdmp fpz26 $freqdamp q $qdmp $qsdmp $freqloss 1.0
 
      axis fpz26 posy   /* relate materials local system to global system
-	
 
-c -------------------------------------------------------------- 
-c type : PIEZO : 
-c name : pznt33 : 
-c desc : Single Crystal PZN-33% PT : 
-c -------------------------------------------------------------- 
+
+c --------------------------------------------------------------
+c type : PIEZO :
+c name : pznt33 :
+c desc : Single Crystal PZN-33% PT :
+c --------------------------------------------------------------
 
 
 c    define baseline dielectric coefficients
@@ -196,7 +196,7 @@ symb aepxx = $epvacm * $epxx
 symb aepyy = $epvacm * $epyy
 symb aepzz = $epvacm * $epzz
 
-     wvsp off 
+     wvsp off
      type lean
 
      prop pznt33 $rho
