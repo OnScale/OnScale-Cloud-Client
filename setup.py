@@ -17,7 +17,7 @@ def get_requirements(requirements_file):
 def get_version():
     """Get version from onscale./__init__.py"""
     init_file = os.path.join(DIRNAME, "onscale_client", "__init__.py")
-    pattern = re.compile(r"__version__\s=\s'(\d+\.\d+\.\d+)'")
+    pattern = re.compile(r"__version__\s=\s\"(\d+\.\d+\.\d+)\"")
     version = None
     with open(init_file, "r") as f:
         while True:
