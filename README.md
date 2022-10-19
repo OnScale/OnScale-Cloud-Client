@@ -32,7 +32,7 @@ pip install --upgrade --extra-index-url https://pypi.portal.onscale.com onscale_
 <a name="setup"></a>
 ## Dev Setup
 
-To develop in this repository found in `packages/`, a few tools to install:
+To develop in this repository, a few tools to install:
 * Python 3.7+ with `pip`
 
 # Generating REST API Data Model
@@ -45,21 +45,21 @@ This script will generate the data model based upon the `/scripts/swagger.json` 
 
 The cloud client can be installed in "editable" mode for development:
 ```
-pip install -e "packages/cloud_client[dev]"
+pip install -e "./[dev]"
 ```
 
 ### Python
-You're free to install Python however you choose. I wrote a [quick guide here](https://gist.github.com/kykosic/954a59dc8a3544c0cf969b792ce1bc62) on how to setup Python development environments via `conda` if you don't know how to properly do this.
+You're free to install Python however you choose. Kyle wrote a [quick guide here](https://gist.github.com/kykosic/954a59dc8a3544c0cf969b792ce1bc62) on how to setup Python development environments via `conda` if you don't know how to properly do this.
 
 
 ### Python Libraries
 Each library can be installed via pip in Python 3.7. For example, to install `onscale_client`:
 ```
-pip install packages/cloud_client
+pip install .
 ```
 To install in inplace for development and include dev dependencies:
 ```
-pip install -e 'packages/cloud_client[dev]'
+pip install -e './[dev]'
 ```
 
 
@@ -105,7 +105,7 @@ Linting can be run via `flake8` using the script:
 ## Doc Generation
 Python API documentation is auto-generated from function type annotations and docstrings. The classes and methods which are documented are configured in the `./doc/source` directory. The documents can be generated with `sphinx` with:
 ```
-cd packages/cloud_client/doc/
+cd doc
 make html
 ```
 This will output the HTML static documentation to `doc/build/html/index.html`.
