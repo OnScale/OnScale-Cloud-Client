@@ -19,7 +19,7 @@ import onscale_client.api.rest_api as rest_api
 import onscale_client.api.datamodel as datamodel
 from onscale_client.api.rest_api import rest_api as RestApi
 from onscale_client.api.files.file_util import blob_type_from_file, maybe_makedirs
-from onscale_client.api.util import wait_for_child_blob
+from onscale_client.api.util import wait_for_blob, wait_for_child_blob
 
 from onscale_client.job import Job
 from onscale_client.simulation import Simulation as SimulationData
@@ -973,6 +973,8 @@ error in user_name or password or client_pools - {ce}"
         material_files: list = None,
         material_blob_ids: list = None,
         linked_job_files: list = None,
+        mesh_files: list = None,
+        mesh_blob_ids: list = None,
     ) -> str:
         """Generates the simapi metadata file
 
@@ -1007,6 +1009,17 @@ error in user_name or password or client_pools - {ce}"
         for id in cad_blob_ids:
             if not is_uuid(id):
                 raise ValueError("TypeError : cad_blob_id is not UUID")
+        if not isinstance(mesh_files, list):
+            raise TypeError("TypeError : mesh_file is not a str value")
+        if not isinstance(mesh_blob_ids, list):
+            raise TypeError("TypeError : mesh_blob_id is not a str value")
+        if len(mesh_files) != len(mesh_blob_ids):
+            raise ValueError(
+                "ValueError: mesh_files and mesh_blob_ids must be of equal length"
+            )
+        for id in mesh_blob_ids:
+            if not is_uuid(id):
+                raise ValueError("TypeError : mesh_blob_id is not UUID")
 
         if material_files is not None:
             if material_blob_ids is None:
@@ -1029,6 +1042,10 @@ error in user_name or password or client_pools - {ce}"
         cad_meta_dict = dict()
         for idx, cf in enumerate(cad_files):
             cad_meta_dict[os.path.basename(cf)] = cad_blob_ids[idx]
+
+        mesh_meta_dict = dict()
+        for idx, cf in enumerate(mesh_files):
+            mesh_meta_dict[os.path.basename(cf)] = mesh_blob_ids[idx]
 
         mat_meta_dict = dict()
         if material_files is not None and material_blob_ids is not None:
@@ -1056,6 +1073,7 @@ error in user_name or password or client_pools - {ce}"
             "materialCloud": sim_materials,
             "linkedJobFiles": linked_job_map,
             "cache": {},
+            "meshBlob": mesh_meta_dict,
         }
 
         metadata = os.path.join(working_dir, "simulationMetadata.json")
@@ -1661,6 +1679,28 @@ error in user_name or password or client_pools - {ce}"
                 )
                 material_file_ids.append(mat_blob_id)
 
+        # Wait for meshing to finish
+        wait_for_blob(blob_type="MESHAUTO",
+                      object_id=job.design_instance_id,
+                      object_type="DESIGNINSTANCE",
+                      timeout_secs=600)
+
+        mesh_blobs = [blob for blob in job.blob_list() if blob.blob_type in [datamodel.BlobType.MESHAUTO, datamodel.BlobType.MESHCUSTOM] and blob.parent_blob_id is None]
+        mesh_files = [mb.original_file_name for mb in mesh_blobs]
+        mesh_blob_ids = [mb.blob_id for mb in mesh_blobs]
+
+        # Edit simapi file to include mesh file name for the mesh just created
+        # This is necessary because the mesh file name is generated dynamically from the mesh hash
+        simapi_file = ""
+        with open(input_file, "r") as file:
+            simapi_file = file.read()
+        with open(input_file, "w") as file:
+            for line in simapi_file.split("\n"):
+                if "on.meshes.MeshFile" in line:
+                    file.write(f'{line.split("(")[0]}("{mesh_files[0]}")\n')
+                else:
+                    file.write(f"{line}\n")
+
         simapi_blob_id = job.upload_blob(
             blob_type=datamodel.BlobType.SIMAPI, file_name=input_file
         )
@@ -1679,6 +1719,8 @@ error in user_name or password or client_pools - {ce}"
             material_files,
             material_file_ids,
             linked_files,
+            mesh_files,
+            mesh_blob_ids,
         )
 
         job.upload_blob_child(
