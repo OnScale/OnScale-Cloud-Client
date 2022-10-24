@@ -1682,7 +1682,8 @@ error in user_name or password or client_pools - {ce}"
         # Wait for meshing to finish
         wait_for_blob(blob_type="MESHAUTO",
                       object_id=job.design_instance_id,
-                      object_type="DESIGNINSTANCE")
+                      object_type="DESIGNINSTANCE",
+                      timeout_secs=600)
 
         mesh_blobs = [blob for blob in job.blob_list() if blob.blob_type in [datamodel.BlobType.MESHAUTO, datamodel.BlobType.MESHCUSTOM] and blob.parent_blob_id is None]
         mesh_files = [mb.original_file_name for mb in mesh_blobs]
