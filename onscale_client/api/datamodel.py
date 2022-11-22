@@ -3789,7 +3789,7 @@ class Job(BaseModel):
     )
     application: Optional[str] = Field(None, example='onscalelab')
     console_parameter_names: Optional[List[str]] = Field(
-        None, alias='consoleParameterNames', unique_items=True
+        None, alias='consoleParameterNames'
     )
     core_hour_estimate: Optional[float] = Field(
         None, alias='coreHourEstimate', example=1.0

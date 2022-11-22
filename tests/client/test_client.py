@@ -28,3 +28,12 @@ def test_set_account(client):
     
     # Check that the current account set has the correct id
     assert client.current_account_id == account_id
+
+# Test last job can be fetched
+def test_last_job(client):
+    job = client.get_last_job()
+
+    # Check that the last job fetched has a job_id with length > 1
+    assert hasattr(job, 'job_id')
+    assert len(job.job_id) > 1
+
