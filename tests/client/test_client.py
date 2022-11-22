@@ -1,4 +1,3 @@
-import onscale as on
 import onscale_client as oc
 import pytest
 import os
