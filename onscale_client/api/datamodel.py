@@ -2660,7 +2660,6 @@ class ProjectRemoveUserRequest(BaseModel):
         example='21441968-019c-4ae7-a76b-c3059eac0bd0',
     )
 
-
 class ProjectRequest(BaseModel):
     project_id: Optional[str] = Field(
         None,

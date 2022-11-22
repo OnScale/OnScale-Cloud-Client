@@ -1406,7 +1406,7 @@ class RestApi(object, metaclass=Singleton):
         project_title: str = None,
         project_goal: str = None,
         core_hour_limit: int = None,
-    ) -> datamodel.ProjectCreateResponse:
+    ) -> datamodel.ProjectCreateRequest:
         """Create a project
 
         Args:
@@ -1441,7 +1441,7 @@ class RestApi(object, metaclass=Singleton):
         try:
             response = self.post(
                 endpoint="/project/create",
-                expected_class=datamodel.ProjectCreateResponse,
+                expected_class=datamodel.ProjectCreateRequest,
                 payload=datamodel.ProjectCreateRequest(
                     accountId=account_id,
                     hpcId=hpc_id,
@@ -1461,7 +1461,7 @@ class RestApi(object, metaclass=Singleton):
         design_description: str = None,
         design_goal: str = None,
         physics: datamodel.Physics = None,
-    ) -> datamodel.DesignCreateResponse:
+    ) -> datamodel.DesignCreateRequest:
         """Create a design for a project
 
         Args:
@@ -1495,7 +1495,7 @@ class RestApi(object, metaclass=Singleton):
         try:
             response = self.post(
                 endpoint="/design/create",
-                expected_class=datamodel.DesignCreateResponse,
+                expected_class=datamodel.DesignCreateRequest,
                 payload=datamodel.DesignCreateRequest(
                     projectId=project_id,
                     designTitle=design_title,
