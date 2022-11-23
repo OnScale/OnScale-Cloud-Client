@@ -1483,7 +1483,7 @@ class RestApi(object, metaclass=Singleton):
             'My OnScale Project'
         """
         if self.debug_output:
-            print("RestApi.account_list:")
+            print("RestApi.project_list:")
         try:
             project_list = self.post_list(
                 endpoint="/project/list",
