@@ -1454,6 +1454,46 @@ class RestApi(object, metaclass=Singleton):
             raise
         return response
 
+    def project_list(self,
+                    account_id: str = None,
+                    include_usage: Optional[bool] = False,
+                    include_user_ids: Optional[bool] = False
+                    ) -> List[datamodel.ProjectListRequest]:
+        """Request the current users project list
+
+        calls POST '/project/list'
+
+        Args:
+            account_id: The UUID representing the id of the account to which the project
+                is associated
+            include_user_ids: if true, userIdList which include all Ids of the Contributors is returned
+            include_usage: if true, the total Core Hour cost of the project is loaded
+
+        Returns:
+            list all project accessible by the current user
+
+        Raises:
+            ApiError: includes HTTP error code indicating error
+
+        Examples:
+            >>> import onscale_client.api.rest_api as rest_api
+            >>> api = rest_api.RestApi(portal='prod', auth_token='AUTH_TOKEN')
+            >>> proj_list = api.project_list(account_id=0954e70b-237a-4cdb-a267-b5da0f67dd70)
+            >>> print(proj_list[0].project_title)
+            'My OnScale Project'
+        """
+        if self.debug_output:
+            print("RestApi.account_list:")
+        try:
+            project_list = self.post_list(
+                endpoint="/project/list",
+                expected_class=datamodel.Project,
+                payload=datamodel.AccountRequest(accountId=account_id)
+            )
+        except ApiError:
+            raise
+        return project_list
+
     def design_create(
         self,
         project_id: str = None,

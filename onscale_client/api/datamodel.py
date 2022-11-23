@@ -3434,7 +3434,6 @@ class AccountListResponse(BaseModel):
     account: Optional[Account] = None
     account_access: Optional[AccountAccess] = Field(None, alias='accountAccess')
 
-
 class AccountReport(BaseModel):
     account: Optional[Account] = None
     core_hours_consumed: Optional[float] = Field(None, alias='coreHoursConsumed')
@@ -3614,7 +3613,6 @@ class Project(BaseModel):
     project_title: Optional[str] = Field(None, alias='projectTitle')
     user_id: Optional[str] = Field(None, alias='userId')
     user_id_list: Optional[List[str]] = Field(None, alias='userIdList')
-
 
 class ReportBundle(BaseModel):
     account_index: Optional[Dict[str, Account]] = Field(None, alias='accountIndex')
