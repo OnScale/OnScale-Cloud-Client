@@ -61,6 +61,7 @@ def configure(
             if not os.path.exists(onscale_dir):
                 os.makedirs(onscale_dir)
             config_data = dict()
+            config_data["profiles"] = dict()
 
         if alias is None:
             alias = input("Alias [Default]:")
@@ -98,6 +99,8 @@ def configure(
             # get the list of available accounts
             account_names = client.account_names()
             if account_name is None:
+                print("Available accounts")
+                print(account_names)
                 account_name = input(f"default account [{account_names[0]}]:")
             if account_name is None or account_name == "":
                 account_name = account_names[0]
@@ -297,21 +300,23 @@ def switch_default_profile(alias: str):
                     config_data = json.load(json_config)
 
                 if "profiles" not in config_data:
-                    raise ValueError("Alias doesnt exist")
+                    raise ValueError("alias does not exist")
                 if alias not in config_data["profiles"]:
-                    raise ValueError("Alias doesnt exist")
+                    raise ValueError("alias does not exist")
                 else:
                     config_data["default"] = alias
 
                     with open(config_file, "w") as json_config:
                         json.dump(config_data, json_config, indent=4)
             else:
-                raise ValueError("User Profiles have not been defined")
+                raise ValueError("user profiles have not been defined")
     except json.JSONDecodeError:
         print(f"Error reading {config_file}")
+        raise
         return
     except ValueError as e:
-        print("Value Error :", e)
+        print("error:", e)
+        raise
         return
 
 

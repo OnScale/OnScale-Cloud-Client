@@ -798,12 +798,12 @@ class Job(object):
         #         self._operation_to_mnmpi(self.__data.operation.value))
 
         if precision is not None:
-            if isinstance(precision, datamodel.Precision):
+            if isinstance(precision, datamodel.Precision3):
                 self.__data.precision = precision
             else:
-                self.__data.precision = datamodel.Precision(precision)
+                self.__data.precision = datamodel.Precision3(precision)
         if self.__data.precision is None:
-            self.__data.precision = datamodel.Precision("SINGLE")
+            self.__data.precision = datamodel.Precision3("SINGLE")
 
         if docker_tag_id is not None:
             self.__data.docker_tag_id = docker_tag_id
@@ -884,7 +884,10 @@ class Job(object):
         self.__data.supervisor_id = supervisor_id
 
         try:
-            self.__data = RestApi.job_submit(self.__data)
+            # self.__data = RestApi.job_submit(self.__data)
+            self.__data.docker_tag = "default"
+            self.__data = RestApi.job_submit_from_job(self.__data)
+
         except rest_api.ApiError as e:
             print(f"APIError raised - {str(e)}")
             return False
@@ -1113,9 +1116,7 @@ class Job(object):
         if isinstance(self.__data, datamodel.Job):
             self.__data.design_id = response.design_id
             if response.design_instance_list:
-                self.__data.design_instance_id = response.design_instance_list[
-                    0
-                ].design_instance_id
+                self.__data.design_instance_id = response.design_instance_list[0].design_instance_id
 
         return self.design_id
 
@@ -1336,12 +1337,12 @@ class Job(object):
         """Perform estimation on this job
 
         In order to simulate any model on the cloud, parameters need to be specified for
-        the numebr of cores to utilize, the amount of ram to use, and the maximum number
+        the number of cores to utilize, the amount of RAM to use, and the maximum number
         of core hours to spend. To determine these values an estimate needs to be performed
-        for each Job. This estimate function enables that to be carreid out.
+        for each Job. This estimate function enables that to be carried out.
 
         This function will make an estimate request and then listen to the user socket
-        for the reuslts of that estimate. The on_estimate_results callback function will
+        for the results of that estimate. The on_estimate_results callback function will
         be invoked when resulst are received and self.estimate_results will contain the
         returend information.
 
@@ -1401,7 +1402,7 @@ class Job(object):
             if self.precision is None:
                 raise ValueError("No precision specified for estimation")
         else:
-            self.__data.precision = datamodel.Precision(precision)
+            self.__data.precision = datamodel.Precision3(precision)
 
         if docker_tag_id is not None:
             self.__data.docker_tag_id = docker_tag_id
@@ -1711,11 +1712,6 @@ class Job(object):
                     raise
 
                 for b in blobs:
-                    if b.blob_type in (
-                        datamodel.BlobType.RSAKEYPRIVATE,
-                        datamodel.BlobType.RSAKEYPUBLIC,
-                    ):
-                        continue
                     return_blobs.append(b)
                     try:
                         assert isinstance(b.blob_id, str)
@@ -1779,7 +1775,7 @@ class Job(object):
 
         Returns with a string value with the last status of this job.
         This status can be :
-            CREATED, QUEUED, PAUSED, FAILED, FINISHED
+            CREATED, QUEUED, RUNNING, PAUSED, FAILED, FINISHED
 
         Returns:
             The last status of this job
@@ -1791,19 +1787,13 @@ class Job(object):
             >>> print(last_job.status())
             'FINISHED'
         """
-        # TODO - Jonny review this
         try:
-            job_list = RestApi.job_list()
+            job_data = RestApi.job_load(job_id = self.job_id, exclude_sims = True, exclude_job_status = True)
         except rest_api.ApiError as e:
             print(f"ApiError raised - {str(e)}")
             raise
 
-        for j in job_list:
-            if j.job_id == self.job_id:
-                if j.last_status is not None:
-                    return j.last_status
-
-        return ""
+        return job_data.last_status
 
     def stop(self):
         """Stops this job

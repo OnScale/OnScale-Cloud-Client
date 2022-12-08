@@ -19,7 +19,9 @@ class Account:
         """
         self._data = account_data
         self.hpc_list: Optional[List[datamodel.Hpc]] = None
-        self.update_balance_data()
+        # the balance data is not needed and takes 2 seconds per account
+        # so we don't call it every time
+        # self.update_balance_data()
 
     def update_balance_data(self):
         """Requests balance data from the cloud and updates the balance data attributes
