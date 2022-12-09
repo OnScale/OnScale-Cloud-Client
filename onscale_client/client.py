@@ -658,7 +658,7 @@ class Client(object):
             if hpc_id == hpc.hpc_id:
                 if hpc.max_node_cores is None:
                     if hpc.hpc_cloud == "AWS":
-                        hpc.max_node_cores = 70
+                        hpc.max_node_cores = 94
                     else:
                         hpc.max_node_cores = 58
                 return hpc
