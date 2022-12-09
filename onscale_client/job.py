@@ -15,7 +15,6 @@ from datetime import datetime
 from typing import List, Callable, Dict, Any, Optional
 
 import os
-
 if import_tqdm_notebook():
     from tqdm.notebook import tqdm  # type: ignore
 else:
@@ -1857,6 +1856,47 @@ class Job(object):
         else:
             print(f"{simulation_id} stop unsuccessful - {sim_stop_response.status}")
 
+    def start_ceetron(self) -> str:
+        """Start a ceetron post processor instance for this job.
+
+        Returns:
+            A string with the URL of the post-processor.
+
+        Example:
+            >>> import onscale_client as os
+            >>> client = os.Client()
+            >>> last_job = client.get_last_job()
+            >>> print(last_job.start_ceetron())
+            https://nginx.dev-hpc-us-east-1-v1-21.hpcs.dev.portal.onscale.com/ddba7cc6-5805-4a91-9b07-904e19e65695/
+        """
+        try:
+            post_processor = RestApi.job_ceetron_start(job_id = self.job_id)
+        except rest_api.ApiError as e:
+            print(f"ApiError raised - {str(e)}")
+            raise
+
+        return post_processor.url
+
+    def stop_ceetron(self):
+        """Stop an already-started ceetron post processor instance for this job.
+
+        Returns:
+            Void
+
+        Example:
+            >>> import onscale_client as os
+            >>> client = os.Client()
+            >>> last_job = client.get_last_job()
+            >>> last_job.stop_ceetron()
+        """
+        try:
+            post_processor = RestApi.job_ceetron_stop(job_id = self.job_id)
+        except rest_api.ApiError as e:
+            print(f"ApiError raised - {str(e)}")
+            raise
+
+        return
+    
     def tag(self, new_tag: str, tag_type: str = "ProjectTag"):
         """Applies this tag to the job
 
