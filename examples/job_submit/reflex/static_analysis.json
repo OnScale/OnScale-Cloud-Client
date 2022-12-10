@@ -1,15 +1,28 @@
 {
   "analysis_type": "StaticAnalysis",
-  "coordinate_systems": [],
+  "physics": [
+    {
+      "physics_type": "Mechanical",
+      "boundary_conditions": [
+        {
+          "boundary_condition_type": "ForceLoad",
+          "group_names": [ "surf_1_341" ],
+          "values": [ "0", "0", "-1e-2" ]
+        },
+        {
+          "boundary_condition_type": "ForceLoad",
+          "group_names": [ "surf_1_192" ],
+          "values": [ "0", "0", "-1e-2" ]
+        },
+        {
+          "boundary_condition_type": "Dirichlet",
+          "group_names": [ "surf_1_590" ],
+          "values": ["0", "0", "0" ]
+        }
+      ]
+    }
+  ],
   "element_order": 2,
-  "functions": [],
-  "header": {
-    "application": "Reflex Visitor",
-    "date": "2020 07 07 09:50:02",
-    "file": "Swing_Arm.json",
-    "type": "Reflex JSON Generation",
-    "version": 1
-  },
   "material_mapping": [
     {
       "material_name": "alum",
@@ -18,11 +31,11 @@
   ],
   "materials": [
     {
-      "density": 2690,
+      "density": "2690",
       "mechanical_properties": {
         "elasticity": {
-          "poissons_ratio": 0.3387523346583018,
-          "youngs_modulus": 0.0001
+          "poissons_ratio": "0.33",
+          "youngs_modulus": "69e9"
         },
         "elasticity_type": "IsotropicLinearElastic"
       },
@@ -46,15 +59,13 @@
         "field_name": "vonMises"
       }
     ],
-    "field_no_of_snapshots": 1,
-    "field_output_type": "VtuComponent",
     "kpi_data": [
       {
-        "filter_name": "ForceResultant",
+        "filter_name": "ForceReaction",
         "group_name": "surf_1_590"
       },
       {
-        "filter_name": "ForceResultant",
+        "filter_name": "ForceReaction",
         "group_name": "surf_1_589"
       },
       {
@@ -65,70 +76,8 @@
         "field_name": "Stress",
         "group_name": "point_1"
       }
-    ],
-    "kpi_output_type": "Json",
-    "kpi_rate": 0
+    ]
   },
-  "physics": [
-    {
-      "active": true,
-      "boundary_conditions": [
-        {
-          "boundary_condition_type": "ForceLoad",
-          "group_names": [
-            "surf_1_341"
-          ],
-          "starting_degree_of_freedom": 0,
-          "value": {
-            "scale": "1000",
-            "values": [
-              0,
-              0,
-              -1
-            ]
-          },
-          "value_type": "ConstantValues"
-        },
-        {
-          "boundary_condition_type": "ForceLoad",
-          "group_names": [
-            "surf_1_192"
-          ],
-          "starting_degree_of_freedom": 0,
-          "value": {
-            "scale": "1000",
-            "values": [
-              0,
-              0,
-              -1
-            ]
-          },
-          "value_type": "ConstantValues"
-        },
-        {
-          "boundary_condition_type": "Dirichlet",
-          "degrees_of_freedom": [
-            0,
-            1,
-            2
-          ],
-          "group_names": [
-            "surf_1_590"
-          ],
-          "value": {
-            "scale": 1.0,
-            "values": [
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          "value_type": "ConstantValues"
-        }
-      ],
-      "physics_type": "Mechanical"
-    }
-  ],
   "points": [
     {
       "coordinates": [

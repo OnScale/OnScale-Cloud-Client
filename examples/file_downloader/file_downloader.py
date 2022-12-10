@@ -14,7 +14,7 @@ def main(argv):
     dl_path = ""
 
     try:
-        opts, args = getopt.getopt(argv, "", ["help", "user=", "pass=", "portal="])
+        opts, args = getopt.getopt(argv, "", ["help", "user=", "pass=", "portal=", "job_id="])
     except getopt.GetoptError:
         print(
             "file_downloader.py --user <username> \

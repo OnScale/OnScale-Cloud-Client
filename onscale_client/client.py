@@ -52,7 +52,6 @@ from onscale.visitors import (
 
 from onscale.reader import load_module, load_sims  # type: ignore
 
-
 class Client(object):
     """The OnScale Cloud Client class
 
@@ -652,16 +651,16 @@ class Client(object):
             'AWS'
         """
         if not isinstance(hpc_id, str):
-            raise ValueError("cloud must be of type str")
+            raise ValueError("hpc_id must be of type str")
 
         hpc_list = self.get_hpc_list(self.current_account_id)
         for hpc in hpc_list:
             if hpc_id == hpc.hpc_id:
-                if hpc.mnmpi_core_count is None:
+                if hpc.max_node_cores is None:
                     if hpc.hpc_cloud == "AWS":
-                        hpc.mnmpi_core_count = 70
+                        hpc.max_node_cores = 94
                     else:
-                        hpc.mnmpi_core_count = 58
+                        hpc.max_node_cores = 58
                 return hpc
         print("> ERROR - Invalid cloud specified")
         raise ValueError("No HPC Found")
@@ -793,7 +792,7 @@ class Client(object):
 
         if not ClientSettings.getInstance().quiet_mode:
             print(
-                f"* Logged in to OnScale platform using account - {self.current_account_name}"
+                f"* Logged in to OnScale platform using account '{self.current_account_name}'"
             )
 
     def _get_cognito_id_token(self, user_name: str, password: str) -> str:
@@ -1075,7 +1074,6 @@ error in user_name or password or client_pools - {ce}"
             "cache": {},
             "meshBlob": mesh_meta_dict,
         }
-
         metadata = os.path.join(working_dir, "simulationMetadata.json")
 
         with open(metadata, "w") as json_file:
@@ -1201,7 +1199,7 @@ error in user_name or password or client_pools - {ce}"
             os.environ["INTEGRATION_TESTS_RUNNING"] = "true"
 
         if not ClientSettings.getInstance().quiet_mode:
-            print("* Submitting Simulation ")
+            print(f"* Submitting Simulation '{job_name}'")
 
         if isinstance(input_obj, Simulation):
             return self.submit_simulation_obj(
@@ -1490,7 +1488,7 @@ error in user_name or password or client_pools - {ce}"
         core_hour_estimate: float = None,
         ram: int = None,
         hpc_region: str = None,
-        hpc_cloud: str = None,
+        hpc_cloud: str = "AWS",
         hpc_id: str = None,
         supervisor_id: str = None,
         job_type: str = None,
@@ -1583,6 +1581,8 @@ error in user_name or password or client_pools - {ce}"
                 hpc_id = self.get_hpc_id_from_region(hpc_region)
             elif hpc_cloud is not None:
                 hpc_id = self.get_hpc_id_from_cloud(hpc_cloud)
+            else:
+                hpc_id = self.get_hpc_id_from_cloud("AWS")
 
         hpc = self.get_hpc_from_hpc_id(hpc_id)
 
@@ -1595,8 +1595,8 @@ error in user_name or password or client_pools - {ce}"
                 number_of_parts = int((cores + 1) / 2)
         elif cores is None and number_of_parts == 1:
             cores = 2
-        if cores is not None and hpc.mnmpi_core_count is not None:
-            if cores > hpc.mnmpi_core_count:
+        if cores is not None and hpc.max_node_cores is not None:
+            if cores > hpc.max_node_cores:
                 if operation is not None:
                     operation = Job._operation_to_mnmpi(operation)
 
@@ -1605,26 +1605,29 @@ error in user_name or password or client_pools - {ce}"
         precision = "SINGLE"
         operation = operation if operation is not None else "REFLEX_MPI"
 
+        # TODO: we should not need to compute this material here,
+        #       it should be the server's task
         sim_materials = self._get_simulation_material_mapping(
             materials_list, input_file
         )
+        
         if sim_materials is None and not material_files:
             raise RuntimeError("Unable to determine materials from simulation")
 
-        # validate the simulation being submitted using the validation visitor
-        # for the workflows tests, we don't want to validate locally because we don't
-        # have access to the metadata files until they are created later in the workflow
-        if "INTEGRATION_TESTS_RUNNING" not in os.environ:
-            v_d = self._validate_simulation(input_file, sim_materials)
-            if (
-                not v_d["geometry"]["valid"]
-                or not v_d["loads"]["valid"]
-                or not v_d["fieldsensors"]["valid"]
-                or not v_d["probesensors"]["valid"]
-                or not v_d["reactionsensors"]["valid"]
-                or not v_d["materials"]["valid"]
-            ):
-                raise RuntimeError(f"Invalid Model Setup - {v_d}")
+        # # validate the simulation being submitted using the validation visitor
+        # # for the workflows tests, we don't want to validate locally because we don't
+        # # have access to the metadata files until they are created later in the workflow
+        # if "INTEGRATION_TESTS_RUNNING" not in os.environ:
+        #     v_d = self._validate_simulation(input_file, sim_materials)
+        #     if (
+        #         not v_d["geometry"]["valid"]
+        #         or not v_d["loads"]["valid"]
+        #         or not v_d["fieldsensors"]["valid"]
+        #         or not v_d["probesensors"]["valid"]
+        #         or not v_d["reactionsensors"]["valid"]
+        #         or not v_d["materials"]["valid"]
+        #     ):
+        #         raise RuntimeError(f"Invalid Model Setup - {v_d}")
 
         job = self.create_job(
             job_name=job_name,
@@ -1633,7 +1636,7 @@ error in user_name or password or client_pools - {ce}"
             operation=operation,
         )
         if not ClientSettings.getInstance().quiet_mode:
-            print(f"> {job_name} successfully created - id : {job.job_id}")
+            print(f"> {job_name} successfully created - job id : {job.job_id}")
 
         def linked_file_check(file, linked_files):
             if linked_files:
@@ -1682,7 +1685,6 @@ error in user_name or password or client_pools - {ce}"
         # Wait for meshing to finish
         wait_for_blob(blob_type="MESHAUTO",
                       object_id=job.design_instance_id,
-                      object_type="DESIGNINSTANCE",
                       timeout_secs=600)
 
         mesh_blobs = [blob for blob in job.blob_list() if blob.blob_type in [datamodel.BlobType.MESHAUTO, datamodel.BlobType.MESHCUSTOM] and blob.parent_blob_id is None]
@@ -1691,15 +1693,24 @@ error in user_name or password or client_pools - {ce}"
 
         # Edit simapi file to include mesh file name for the mesh just created
         # This is necessary because the mesh file name is generated dynamically from the mesh hash
+        # If the original code has a node on.meshes.MeshFile we replace the name
+        # If it does not have a mesh node, we add one
         simapi_file = ""
+        has_mesh_node = False
         with open(input_file, "r") as file:
             simapi_file = file.read()
         with open(input_file, "w") as file:
             for line in simapi_file.split("\n"):
                 if "on.meshes.MeshFile" in line:
+                    has_mesh_node = True
                     file.write(f'{line.split("(")[0]}("{mesh_files[0]}")\n')
                 else:
                     file.write(f"{line}\n")
+
+            if has_mesh_node == False:
+                file.write('    # Automatic mesh filename\n')
+                file.write(f'    on.meshes.MeshFile("{mesh_files[0]}")\n')
+
 
         simapi_blob_id = job.upload_blob(
             blob_type=datamodel.BlobType.SIMAPI, file_name=input_file
@@ -1762,7 +1773,7 @@ error in user_name or password or client_pools - {ce}"
         )
 
         if job.estimate_results is None or job.estimate_results == -1:
-            print("> ERROR - during estimation. Job submission aborted.")
+            raise RuntimeError("estimator failed")
             return job
 
         if ram and core_hour_estimate and (cores or number_of_parts):
@@ -1800,8 +1811,8 @@ error in user_name or password or client_pools - {ce}"
                     table.append(["CH Estimate", estimate_data.cost])
                 print(tabulate(table, tablefmt="simple"))
 
-            if estimate_data.parts is not None and hpc.mnmpi_core_count is not None:
-                if estimate_data.parts > hpc.mnmpi_core_count / 2:
+            if estimate_data.parts is not None and hpc.max_node_cores is not None:
+                if estimate_data.parts > hpc.max_node_cores / 2:
                     if operation is not None:
                         operation = Job._operation_to_mnmpi(operation)
 
@@ -1938,7 +1949,7 @@ error in user_name or password or client_pools - {ce}"
         number_of_parts: int = None,
         job_type: str = None,
         hpc_region: str = None,
-        hpc_cloud: str = None,
+        hpc_cloud: str = "AWS",
         hpc_id: str = None,
         supervisor_id: str = None,
     ) -> Job:
@@ -2061,6 +2072,8 @@ error in user_name or password or client_pools - {ce}"
                 hpc_id = self.get_hpc_id_from_region(hpc_region)
             elif hpc_cloud is not None:
                 hpc_id = self.get_hpc_id_from_cloud(hpc_cloud)
+            else:
+                hpc_id = self.get_hpc_id_from_cloud("AWS")
 
         if number_of_parts is not None and number_of_parts > 1:
             cores = number_of_parts * 2
@@ -2074,8 +2087,8 @@ error in user_name or password or client_pools - {ce}"
 
         hpc = self.get_hpc_from_hpc_id(hpc_id)
 
-        if cores is not None and hpc.mnmpi_core_count is not None:
-            if cores > hpc.mnmpi_core_count:
+        if cores is not None and hpc.max_node_cores is not None:
+            if cores > hpc.max_node_cores:
                 if operation is not None:
                     operation = Job._operation_to_mnmpi(operation)
 
@@ -2463,11 +2476,10 @@ Connection has not been established"
                 if am.material_title in materials_list:
                     sim_materials[am.material_title] = am.material_id
 
+            # how come this value is a dictionary and not a string?
             for key, value in sim_materials.items():
-                if value is None:
-                    raise RuntimeError(
-                        f"{key} material is not available for this account"
-                    )
+                if bool(value) == False:
+                    raise RuntimeError(f"material '{key}' is not available for this account")
 
             return sim_materials
         else:
@@ -2515,7 +2527,7 @@ Connection has not been established"
         sims = load_sims(module)
         for sim in sims:
             validation_visitor = ValidationVisitor(material_map_path=material_map_path)
-            validation_visitor.analyze(sim)
+            # validation_visitor.analyze(sim)
 
         if os.path.exists(material_map_path):
             os.remove(material_map_path)
@@ -2694,8 +2706,7 @@ Connection has not been established"
         try:
             blobs = RestApi.blob_list_object(
                 blob_type.name,
-                design_instance_id,
-                datamodel.ObjectType.DESIGNINSTANCE.name,
+                design_instance_id
             )
         except rest_api.ApiError as e:
             print(f"ApiError raised - {str(e)}")

@@ -404,7 +404,7 @@ class RestApi(object, metaclass=Singleton):
         return response.job_id
 
     def job_load(
-        self, job_id: str, exclude_sims: bool, exclude_job_status: bool
+        self, job_id: str, exclude_sims: bool = False, exclude_job_status: bool = False
     ) -> datamodel.Job:
         """Request Job info for the job specified by job_id
 
@@ -495,6 +495,35 @@ class RestApi(object, metaclass=Singleton):
             raise
         return response
 
+
+    def job_submit_from_job(self, job: datamodel.Job) -> datamodel.Job:
+        """Submit Job to the cloud
+
+        calls POST /job/submit
+
+        Args:
+            job: datamodel.Job objects containing all of the required information to submit to
+                the cloud
+
+        Returns:
+            Object containing the job information for successfully submitted job
+
+        Raises:
+            ApiError: includes HTTP error code indicating error
+        """
+        if self.debug_output:
+            print("RestApi.job_submit:")
+        try:
+            response = self.post(
+                endpoint="/job/submit",
+                expected_class=datamodel.Job,
+                payload=job
+            )
+        except ApiError:
+            raise
+        return response
+    
+
     def job_update_name(self, job_id: str, job_name: str) -> datamodel.Job:
         """Update name of a Job
 
@@ -569,10 +598,10 @@ class RestApi(object, metaclass=Singleton):
         job_id: str,
         blob_id: str,
         solver: str,
-        precision: str,
-        docker_tag_id: str,
-        application: str,
-        required_blobs: List[str],
+        precision: str = "DOUBLE",
+        docker_tag_id: str = "",
+        application: str = "",
+        required_blobs: List[str] = [],
     ) -> datamodel.Estimate:
         """This function submits a job to HPC for estimation. JobAccess and SIMAPI blob required.
 
@@ -1014,7 +1043,7 @@ class RestApi(object, metaclass=Singleton):
         return response
 
     def blob_list_object(
-        self, blob_type: str, object_id: str, object_type: str
+        self, blob_type: str, object_id: str
     ) -> List[datamodel.Blob]:
         """Request a list of all blobs realting to the object_id
 
@@ -1042,7 +1071,7 @@ class RestApi(object, metaclass=Singleton):
                 endpoint="/blob/list/object",
                 expected_class=datamodel.Blob,
                 payload=datamodel.BlobRequest(
-                    blobType=blob_type, objectId=object_id, objectType=object_type
+                    blobType=blob_type, objectId=object_id
                 ),
             )
         except ApiError:
@@ -1548,6 +1577,37 @@ class RestApi(object, metaclass=Singleton):
             raise
         return response
 
+    def design_list(
+        self,
+        project_id: str = None
+    ) -> List[datamodel.Design]:
+        """Get the list of designs in a project
+
+        Args:
+            project_id: The UUID representing the id of the project
+
+        Returns:
+            A list of designs
+
+        Raises:
+            ApiError: includes HTTP error code indicating error
+
+        Examples:
+            TBD
+        """
+        if self.debug_output:
+            print("RestApi.design_list:")
+
+        try:
+            response = self.post_list(
+                endpoint="/project/design/list",
+                expected_class=datamodel.Design,
+                payload=datamodel.ProjectRequest(projectId=project_id)
+            )
+        except ApiError:
+            raise
+        return response
+    
     def blob_upload(
         self,
         object_id: str,

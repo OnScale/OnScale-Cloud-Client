@@ -9,7 +9,6 @@ from onscale_client.api.rest_api import rest_api
 
 def wait_for_blob(blob_type: str,
                   object_id: str,
-                  object_type: str,
                   timeout_secs: float = None):
     """ Wait for a blob to exist of a specific type polling with backoff
     """
@@ -17,8 +16,7 @@ def wait_for_blob(blob_type: str,
     def poll():
         """ Inner poll function to be retried """
         response = rest_api.blob_list_object(blob_type=blob_type,
-                                             object_id=object_id,
-                                             object_type=object_type)
+                                             object_id=object_id)
         return len(response) > 0
 
     now = time.time()

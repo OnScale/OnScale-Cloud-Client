@@ -5,16 +5,12 @@ import onscale as on
 
 with on.Simulation("None", "None") as sim:
 
-    # General simulation settings
-    on.Scalar(length=1, time=0, mass=0)
-
-    # Define geometry
+    on.settings.EnabledPhysics(["mechanical"])
     geometry = on.CadFile("CircPlate_Quarter.step")
 
-    # Define material database and materials
     materials = on.CloudMaterials("onscale")
-    high_strength_alloy_steel = materials["High-strength alloy steel"]
-    high_strength_alloy_steel >> geometry.parts[0]
+    steel = materials["Structural steel"]
+    steel >> geometry.parts[0]
 
     # Define and apply loads
     pressure = on.loads.Pressure(250e3, alias="LoadedArea")
@@ -27,38 +23,43 @@ with on.Simulation("None", "None") as sim:
     symmetry_2 >> geometry.parts[0].faces[3]
 
     # Define probes
-    probe1 = on.Probe([55.0272, 59.3952, 1.5])
-    on.kpis.Displacement(probe1)
-    probe2 = on.Probe([35.7692, 12.0066, 1.5])
-    on.kpis.Displacement(probe2)
-
-    # Define meshing
-    on.meshes.BasicCoarse()
+    probe1 = on.Point(x=55.0272, y=59.3952, z=1.5)
+    on.probes.Displacement(probe1)
+    probe2 = on.Point(x=35.7692, y=12.0066, z=1.5)
+    on.probes.Displacement(probe2)
 
     # Define output variables
-    on.outputs.Displacement()
-    on.outputs.Stress()
-    on.outputs.Strain()
-    on.outputs.VonMises()
-    on.kpis.ResultantForce([geometry.parts[0].faces[4]])
+    on.fields.Displacement()
+    on.fields.Stress()
+    on.fields.Strain()
+    on.fields.VonMises()
+    on.sensors.ReactionSensor() >> restraint    
 
 import onscale_client as client
 import time
 
 client = client.Client()
-client.set_current_account(account_name="OnScale UK")
 
-# set account to desired account if required. See below
+# set account to desired account if required
+# client.set_current_account(account_name="OnScale UK")
 # client.set_current_account(account_name='OnScale US')
 
-new_job = client.submit(
+job = client.submit(
     input_obj=sim,
     max_spend=5,
-    job_name=f"sim_submission_test_{time.time()}",
-    docker_tag="cloud-develop",
-    number_of_parts=60,
+    job_name=f"circular_plate_submission_test_{time.time()}",
+    number_of_parts=60
 )
 
-# new_job = client.submit(input_obj=sim,
-#                        max_spend=5,
-#                        job_name=f"sim_submission_test_{time.time()}")
+# if the job successfully committed poll status and progress
+print(f"waiting for {job.job_name} with id {job.job_id}...")
+while True:
+    status = job.status()
+    print(f"{status}--{job.get_progress()}%")
+    if status == "FINISHED":
+        break
+    time.sleep(10)
+
+# download results
+job.download_results("downloads")
+print("results donwloaded in directory 'downloads'")
