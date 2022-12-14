@@ -38,7 +38,7 @@ setup(
     version=get_version(),
     description="API for accessing the OnScale cloud platform",
     python_requires=">=3.7",
-    url="https://github.com/OnScale/Simulation_API/packages/cloud_client",
+    url="https://github.com/OnScale/OnScale-Cloud-Client",
     packages=find_packages(exclude=["examples", "tests", "scripts"]),
     install_requires=get_requirements("requirements.txt"),
     extras_require={

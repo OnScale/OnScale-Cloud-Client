@@ -1428,6 +1428,39 @@ class RestApi(object, metaclass=Singleton):
                 shutil.rmtree(temp_path)
             raise ApiError(e)
 
+    def project_load(self, project_id: str) -> datamodel.Project:
+        """Load a Project info for the project_id
+
+        calls POST '/project/load'
+
+        Args:
+            project_id: The UUID identifying the project to load
+            exclude_sims: Set to True to exlcude the simulation information from the job
+
+        Returns:
+            Object containing the project information for the given project_id
+
+        Raises:
+            ApiError: includes HTTP error code indicating error
+
+        Examples:
+            >>> import onscale_client.api.rest_api as rest_api
+            >>> api = rest_api.RestApi(portal='prod', auth_token='AUTH_TOKEN')
+            >>> job = api.projectload('0954e70b-237a-4cdb-a267-b5da0f67dd70')
+        """
+        if self.debug_output:
+            print("RestApi.job_load:")
+        try:
+            response = self.post(
+                endpoint="/project/load",
+                expected_class=datamodel.Project,
+                payload=datamodel.ProjectRequest(projectId=project_id),
+            )
+        except ApiError:
+            raise
+        return response
+
+
     def project_create(
         self,
         account_id: str = None,
@@ -1487,7 +1520,7 @@ class RestApi(object, metaclass=Singleton):
                     account_id: str = None,
                     include_usage: Optional[bool] = False,
                     include_user_ids: Optional[bool] = False
-                    ) -> List[datamodel.ProjectListRequest]:
+                    ) -> List[datamodel.Project]:
         """Request the current users project list
 
         calls POST '/project/list'
@@ -1517,7 +1550,7 @@ class RestApi(object, metaclass=Singleton):
             project_list = self.post_list(
                 endpoint="/project/list",
                 expected_class=datamodel.Project,
-                payload=datamodel.AccountRequest(accountId=account_id)
+                payload=datamodel.ProjectListRequest(accountId=account_id, includeUsage=include_usage, includeUserIds=include_user_ids)
             )
         except ApiError:
             raise
