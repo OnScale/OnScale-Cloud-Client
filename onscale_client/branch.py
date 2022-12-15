@@ -6,51 +6,24 @@ import onscale_client.api.datamodel as datamodel
 import onscale_client.api.rest_api as rest_api
 from onscale_client.api.rest_api import rest_api as RestApi
 from onscale_client.common.client_settings import ClientSettings
-from onscale_client.api.files.file_util import hash_file
 
-from os.path import exists
+class Branch(object):
+    """Branch object
 
-import pdb
-
-# from onscale_client.simulation import Simulation
-
-# from .common.client_settings import ClientSettings, import_tqdm_notebook
-# from .sockets import EstimateListener, JobListener
-
-# from .estimate_results import EstimateResults
-# from .job_progress import JobProgressManager
-
-# from datetime import datetime
-
-# from typing import List, Callable, Dict, Any, Optional
-
-# import os
-# if import_tqdm_notebook():
-#     from tqdm.notebook import tqdm  # type: ignore
-# else:
-#     from tqdm import tqdm  # type: ignore
-#
-#
-# ESTIMATE_TIME_OUT = 60 * 10
-
-
-class Project(object):
-    """Project object
-
-    Used to operate on a project in Onscale.
+    Used to operate on a branch in Onscale.
     """
 
     def __init__(
         self,
         id: str,
     ):
-        """Constructor for the Project object
+        """Constructor for the Branch object
 
         Args:
-            id: the id of the loaded project (to create a new project use Client.createProject())
+            id: the id of the loaded branch (to create a new project use Project.createBranch())
         """
 
-        self.__data: Optional[datamodel.Project] = RestApi.project_load(project_id=id)
+        self.__data: Optional[datamodel.Design] = RestApi.design_load(design_id=id)
 
 
     @property
@@ -60,20 +33,20 @@ class Project(object):
     def __str__(self):
         """string representation of Project object"""
         return_str = "Project(\n"
-        return_str += f"    project_id={self.__data.project_id},\n"
-        return_str += f"    account_id={self.__data.account_id},\n"
-        return_str += f"    hpc_id={self.__data.hpc_id},\n"
-        return_str += f"    user_id={self.__data.user_id},\n"
-        return_str += f"    project_title={self.__data.project_title},\n"
-        return_str += f"    project_goal={self.__data.project_goal},\n"
-        return_str += f"    create_date={self.__data.create_date},\n"
-        return_str += f"    last_update={self.__data.last_update},\n"
-        return_str += f"    core_hour_used={self.__data.core_hour_used},\n"
-        return_str += f"    design_list={self.__data.design_list},\n"
-        return_str += f"    user_id_list={self.__data.user_id_list},\n"
-        return_str += f"    last_update_by_me={self.__data.last_update_by_me},\n"
-        return_str += f"    my_access_type={self.__data.my_access_type},\n"
-        return_str += f"    archived={self.__data.archived},\n"
+        # return_str += f"    project_id={self.__data.project_id},\n"
+        # return_str += f"    account_id={self.__data.account_id},\n"
+        # return_str += f"    hpc_id={self.__data.hpc_id},\n"
+        # return_str += f"    user_id={self.__data.user_id},\n"
+        # return_str += f"    project_title={self.__data.project_title},\n"
+        # return_str += f"    project_goal={self.__data.project_goal},\n"
+        # return_str += f"    create_date={self.__data.create_date},\n"
+        # return_str += f"    last_update={self.__data.last_update},\n"
+        # return_str += f"    core_hour_used={self.__data.core_hour_used},\n"
+        # return_str += f"    design_list={self.__data.design_list},\n"
+        # return_str += f"    user_id_list={self.__data.user_id_list},\n"
+        # return_str += f"    last_update_by_me={self.__data.last_update_by_me},\n"
+        # return_str += f"    my_access_type={self.__data.my_access_type},\n"
+        # return_str += f"    archived={self.__data.archived},\n"
         return_str += ")"
         return return_str
 
@@ -89,12 +62,12 @@ class Project(object):
         joined = ", ".join(attrs)
         return f"{type(self).__name__}({joined})"
 
-    def listBranches(self) -> dict:
+    def listVersions(self) -> dict:
         if ClientSettings.getInstance().debug_mode:
-            print("listBranches: ")
+            print("listVersions: ")
 
         try:
-            self.__data.design_list = RestApi.design_list(project_id = self.__data.project_id)
+            self.__data.designinstance_list = RestApi.design_list(project_id = self.__data.project_id)
         except rest_api.ApiError as e:
             print(f"APIError raised - {str(e)}")
 

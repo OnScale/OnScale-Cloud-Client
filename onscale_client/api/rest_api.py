@@ -1640,6 +1640,34 @@ class RestApi(object, metaclass=Singleton):
         except ApiError:
             raise
         return response
+
+    def design_load(self, design_id: str) -> datamodel.Design:
+        """Request Branch info for the branch specified by design_id
+
+        calls POST '/design/load'
+
+        Args:
+            design_id: The UUID identifying the branch to load
+
+        Returns:
+            Object containing the design information for the given design_id
+
+        Raises:
+            ApiError: includes HTTP error code indicating error
+
+        """
+        if self.debug_output:
+            print("RestApi.design_load:")
+        try:
+            response = self.post(
+                endpoint="/design/load",
+                expected_class=datamodel.Design,
+                payload=datamodel.DesignRequest(designId=design_id),
+            )
+        except ApiError:
+            raise
+        return response
+
     
     def blob_upload(
         self,
