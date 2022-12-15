@@ -13,7 +13,7 @@ import tempfile
 import base64
 
 import pdb
-from onscale_client.project import Project
+import onscale_client.project as Project
 
 # from shutil import copyfile
 # from onscale_client.estimate_data import EstimateData
@@ -75,6 +75,7 @@ class ClientLight(object):
         password: Optional[str] = None,
         account_id: Optional[str] = None,
         account_name: Optional[str] = None,
+        hpc_id: Optional[str] = None,
         quiet_mode: bool = False,
         debug_mode: bool = False,
         skip_login: bool = False,
@@ -177,8 +178,11 @@ class ClientLight(object):
         else:
             raise NotImplementedError("NotImplementedError: unknown portal_target name")
 
-        if skip_login is False:
+        if not skip_login:
+            # pdb.set_trace()
             self.login(alias, user_name, password, account_id, account_name)
+
+        self.__hpc_id = hpc_id if hpc_id is not None else self.get_hpc_id_from_cloud("AWS")
 
     def __str__(self):
         return_str = "Client(\n"
@@ -221,6 +225,10 @@ class ClientLight(object):
           0954e70b-237a-4cdb-a267-b5da0f67dd70
         """
         return self.__current_account_id
+
+    @property
+    def hpc_id(self) -> Optional[str]:
+        return self.__hpc_id
 
     def set_current_account(self, account_name: str = None, account_id: str = None):
         """Set the current account
@@ -993,4 +1001,21 @@ error in user_name or password or client_pools - {ce}"
             project_dict[project.project_id] = project.project_title
 
         return project_dict
+
+    def createProject(
+                self,
+                title: str,
+                hpc_id: Optional[str] = None,
+                ) -> Project:
+        try:
+            # pdb.set_trace()
+            response = RestApi.project_create(account_id=self.__current_account_id, hpc_id=self.__hpc_id, project_title=title)
+        except rest_api.ApiError as e:
+            print(f"APIError raised - {str(e)}")
+
+# Project(trace_id='729703114606183489', project_id='300eab68-6400-49a2-aaec-ba390a530e0f', account_id='5c013c08-c558-4c95-ac9a-6c943a1e9a60', hpc_id='dd5dd1a7-cc2e-4366-a7f1-c37b6f06f644', user_id='cb91351e-94d4-4d68-aa2f-ab773a7024e7', project_title='from createProject', project_goal=None, create_date=1671058178508, last_update=1671058178508, core_hour_used=0.0, design_list=[], user_id_list=None, last_update_by_me=None, my_access_type=None, archived=None)
+
+
+        # TODO: create a project object out of response instead of re-calling /project/load
+        return Project.Project(response.project_id)
 
