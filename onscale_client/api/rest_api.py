@@ -1817,6 +1817,57 @@ class RestApi(object, metaclass=Singleton):
             raise
         return response
 
+    def job_ceetron_start(self, job_id):
+        """Launches a ceetron post processor instance for this job. This incurs expense.
+
+        Returns:
+            datamodel.PostProcessorResponse object
+
+        Raises:
+            ApiError: includes HTTP error code indicating error
+
+        Examples:
+            >>> import onscale_client.api.rest_api as rest_api
+            >>> api = rest_api.RestApi(portal='prod', auth_token='AUTH_TOKEN')
+            >>> repsonse = api.job_ceetron_start(job_id='JOB_ID')
+            >>> print(response.url)
+            ''
+        """
+        if self.debug_output:
+            print("RestApi.ceetron_start:")
+        try:
+            response = self.post(
+                endpoint="/job/postprocessor/start/ceetron",
+                expected_class=datamodel.PostProcessorResponse,
+                payload=datamodel.JobPostProcessorRequest(jobId=job_id),
+            )
+        except ApiError:
+            raise
+        return response
+
+    def job_ceetron_stop(self, job_id: str):
+        """Stop a ceetron post processor instance for this job.
+
+        Raises:
+            ApiError: includes HTTP error code indicating error
+
+        Examples:
+            >>> import onscale_client.api.rest_api as rest_api
+            >>> api = rest_api.RestApi(portal='prod', auth_token='AUTH_TOKEN')
+            >>> print(api.job_ceetron_stop(job_id=JOB_ID))
+            >>> ''
+        """
+        if self.debug_output:
+            print("RestApi.paraview_stop:")
+        try:
+            response = self.post(
+                endpoint="/job/postprocessor/stop/ceetron",
+                payload=datamodel.JobRequest(jobId=job_id),
+            )
+        except ApiError:
+            raise
+        return response
+    
     def job_paraview_start(self, job_id: str, docker_tag_id: Optional[str] = None):
         """Launches a paraview server instance for this job. This incurs expense.
 
