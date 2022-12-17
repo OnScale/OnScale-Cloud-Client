@@ -11,6 +11,7 @@ from onscale_client.api.files.file_util import hash_file
 from os.path import exists
 
 import pdb
+import onscale_client.branch as Branch
 
 # from onscale_client.simulation import Simulation
 
@@ -114,11 +115,11 @@ class Project(object):
                 design_title = design_title,
                 design_description = design_description,
                 design_goal = design_goal)
-            print(response)
+            # print(response)
         except rest_api.ApiError as e:
             print(f"APIError raised - {str(e)}")
 
-        return response.design_id
+        return Branch.Branch(response.design_id)
 
 
 

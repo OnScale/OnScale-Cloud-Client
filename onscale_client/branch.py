@@ -7,6 +7,16 @@ import onscale_client.api.rest_api as rest_api
 from onscale_client.api.rest_api import rest_api as RestApi
 from onscale_client.common.client_settings import ClientSettings
 
+class Version:
+    def __init__(
+        self,
+        id: str,
+    ):
+        print("hola")
+
+
+
+
 class Branch(object):
     """Branch object
 
@@ -32,7 +42,7 @@ class Branch(object):
 
     def __str__(self):
         """string representation of Project object"""
-        return_str = "Project(\n"
+        return_str = "Branch(\n"
         # return_str += f"    project_id={self.__data.project_id},\n"
         # return_str += f"    account_id={self.__data.account_id},\n"
         # return_str += f"    hpc_id={self.__data.hpc_id},\n"
@@ -77,7 +87,7 @@ class Branch(object):
 
         return branch_dict
 
-    def createBranch(self, design_title, design_description = None, design_goal = None) -> Branch:
+    def createVersion(self, design_title, design_description = None, design_goal = None) -> Version:
         if ClientSettings.getInstance().debug_mode:
             print("createBranch: ")
 
@@ -93,47 +103,3 @@ class Branch(object):
 
         return response.design_id
 
-
-
-    def listCADs(self) -> dict:
-        # pdb.set_trace()
-        response = RestApi.blob_list(object_id = self.__data.project_id);
-        dict_cad = dict()
-        for blob in response:
-            if blob.blob_type == datamodel.BlobType.CAD:
-                dict_cad[blob.blob_id] = blob.hash
-        return dict_cad
-
-
-    def addCAD(self, cad_file_path):
-        # pdb.set_trace()
-        if not exists(cad_file_path):
-            print("error: cannot find paht '%s'" % cad_file_path)
-
-        cad_md5 = hash_file(cad_file_path)
-
-        # check if the cad is already there
-        dict_cads = self.listCADs()
-        cad_blob_id = None
-        for blob_id, blob_md5 in dict_cads.items():
-            if cad_md5 == blob_md5:
-                cad_blob_id = blob_id
-                print("CAD file %s is already in the project (hash %s)" % (cad_file_path, cad_md5))
-
-        if cad_blob_id is not None:
-            return cad_blob_id
-
-        # re-upload
-        print("CAD file %s is not in the project, uploading..." % (cad_file_path))
-        response = RestApi.blob_upload(
-                object_id = self.__data.project_id,
-                object_type = datamodel.ObjectType1.PROJECT,
-                blob_type = datamodel.BlobType.CAD,
-                file = cad_file_path)
-
-        return response.blob_id
-
-
-
-    # TODO
-    # def rename(self, new_name: str):
