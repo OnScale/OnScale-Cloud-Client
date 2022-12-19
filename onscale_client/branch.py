@@ -12,9 +12,30 @@ class Version:
         self,
         id: str,
     ):
-        print("hola")
+        self.__data: Optional[datamodel.DesignInstance] = RestApi.design_instance_load(id)
 
 
+    @property
+    def id(self) -> str:
+        return self.__data.design_instance_id
+
+    def __str__(self):
+        """string representation of Project object"""
+        return_str = "Version(\n"
+        return_str += f"    design_instance_id={self.__data.design_instance_id},\n"
+        return_str += f"    design_id={self.__data.design_id},\n"
+        return_str += f"    project_id={self.__data.project_id},\n"
+        return_str += f"    user_id={self.__data.user_id},\n"
+        return_str += f"    design_instance_title={self.__data.design_instance_title},\n"
+        return_str += f"    description={self.__data.description},\n"
+        return_str += f"    create_date={self.__data.create_date},\n"
+        return_str += f"    design_instance_hash={self.__data.design_instance_hash},\n"
+        return_str += f"    parent_design_instance_id={self.__data.parent_design_instance_id},\n"
+        return_str += f"    analysis_list={self.__data.analysis_list},\n"
+        return_str += f"    locked={self.__data.locked},\n"
+        return_str += f"    archived={self.__data.archived},\n"
+        return_str += ")"
+        return return_str
 
 
 class Branch(object):
@@ -38,25 +59,22 @@ class Branch(object):
 
     @property
     def id(self) -> str:
-        return self.__data.job_id
+        return self.__data.design_id
 
     def __str__(self):
         """string representation of Project object"""
         return_str = "Branch(\n"
-        # return_str += f"    project_id={self.__data.project_id},\n"
-        # return_str += f"    account_id={self.__data.account_id},\n"
-        # return_str += f"    hpc_id={self.__data.hpc_id},\n"
-        # return_str += f"    user_id={self.__data.user_id},\n"
-        # return_str += f"    project_title={self.__data.project_title},\n"
-        # return_str += f"    project_goal={self.__data.project_goal},\n"
-        # return_str += f"    create_date={self.__data.create_date},\n"
-        # return_str += f"    last_update={self.__data.last_update},\n"
-        # return_str += f"    core_hour_used={self.__data.core_hour_used},\n"
-        # return_str += f"    design_list={self.__data.design_list},\n"
-        # return_str += f"    user_id_list={self.__data.user_id_list},\n"
-        # return_str += f"    last_update_by_me={self.__data.last_update_by_me},\n"
-        # return_str += f"    my_access_type={self.__data.my_access_type},\n"
-        # return_str += f"    archived={self.__data.archived},\n"
+        return_str += f"    design_id={self.__data.design_id},\n"
+        return_str += f"    project_id={self.__data.project_id},\n"
+        return_str += f"    user_id={self.__data.user_id},\n"
+        return_str += f"    design_title={self.__data.design_title},\n"
+        return_str += f"    design_description={self.__data.design_description},\n"
+        return_str += f"    design_goal={self.__data.design_goal},\n"
+        return_str += f"    physics={self.__data.physics},\n"
+        return_str += f"    create_date={self.__data.create_date},\n"
+        return_str += f"    parent_design_id={self.__data.parent_design_id},\n"
+        return_str += f"    design_instance_list={self.__data.design_instance_list},\n"
+        return_str += f"    archived={self.__data.archived},\n"
         return_str += ")"
         return return_str
 

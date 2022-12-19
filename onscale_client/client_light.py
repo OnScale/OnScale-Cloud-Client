@@ -14,6 +14,7 @@ import base64
 
 import pdb
 import onscale_client.project as Project
+import onscale_client.branch as Branch
 
 # from shutil import copyfile
 # from onscale_client.estimate_data import EstimateData

@@ -1678,7 +1678,7 @@ class RestApi(object, metaclass=Singleton):
         """Create a design instance for a design
 
         Args:
-            design_id: The UUID representing the id of the design instance
+            design_id: The UUID representing the id of the design the instance is attached to
             design_instance_title: The title for the design instance
             description: The description for the design instance
 
@@ -1705,6 +1705,34 @@ class RestApi(object, metaclass=Singleton):
         except ApiError:
             raise
         return response
+
+
+    def design_instance_load(self, id) -> datamodel.Design:
+        """Load a design instance for a design
+
+        Args:
+            id: The UUID representing the id of the design instance
+
+        Returns:
+            Design instance information will be returned if created correctly
+
+        Raises:
+            ApiError: includes HTTP error code indicating error
+
+        """
+        if self.debug_output:
+            print("RestApi.design_instance_load:")
+
+        try:
+            response = self.post(
+                endpoint="/design/instance/load",
+                expected_class=datamodel.DesignInstance,
+                payload=datamodel.DesignInstanceRequest(designInstanceId=id),
+            )
+        except ApiError:
+            raise
+        return response
+
     
     def blob_upload(
         self,
