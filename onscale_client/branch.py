@@ -20,6 +20,11 @@ class Study:
         self.__data: Optional[datamodel.Job] = RestApi.job_load(id)
 
 
+from typing import List, Dict, Optional
+
+import pdb
+
+
 class Version:
     def __init__(
         self,
@@ -126,7 +131,7 @@ class Branch(object):
         return self.__data.design_id
 
     def __str__(self):
-        """string representation of Project object"""
+        """string representation of Branch object"""
         return_str = "Branch(\n"
         return_str += f"    design_id={self.__data.design_id},\n"
         return_str += f"    project_id={self.__data.project_id},\n"
@@ -155,35 +160,47 @@ class Branch(object):
         return f"{type(self).__name__}({joined})"
 
     def listVersions(self) -> dict:
-        if ClientSettings.getInstance().debug_mode:
-            print("listVersions: ")
 
-        try:
-            self.__data.designinstance_list = RestApi.design_list(project_id = self.__data.project_id)
-        except rest_api.ApiError as e:
-            print(f"APIError raised - {str(e)}")
+        # we need to re-load the branch object to have a fresh list of versions
+        current_branch = Branch(self.__data.design_id)
+        self.__data.design_instance_list = current_branch.__data.design_instance_list
 
-        branch_dict = dict()
-        for branch in self.__data.design_list:
-            branch_dict[branch.design_id] = branch.design_title
+        version_dict = dict()
+        for version in self.__data.design_instance_list:
+            version_dict[version.design_instance_id] = version.design_instance_title
 
-        return branch_dict
+        return version_dict
+    
+    def getVersion(self, id: Optional[str] = None):
+        """Load a version object from a branch.
 
-    def createVersion(self, design_title, design_description = None, design_goal = None) -> Version:
+        Args:
+            id: the id of the loaded version. If empty, the last version is returned.
+        """
+
+        if id == None:
+            # we need to re-load the branch object to have a fresh list of versions
+            current_branch = Branch(self.__data.design_id)
+            self.__data.design_instance_list = current_branch.__data.design_instance_list
+            return Version(self.__data.design_instance_list[len(self.__data.design_instance_list)-1].design_instance_id)
+        else:
+            # this is redundant, but ok
+            return Version(id)
+
+    def createVersion(self, title, description = None, goal = None) -> Version:
         if ClientSettings.getInstance().debug_mode:
             print("createVersion: ")
 
         try:
-            response = RestApi.design_create(
-                project_id = self.__data.project_id,
-                design_title = design_title,
-                design_description = design_description,
-                design_goal = design_goal)
+            response = RestApi.design_instance_create(
+                design_id = self.__data.design_id,
+                design_instance_title = title,
+                description = description)
             print(response)
         except rest_api.ApiError as e:
             print(f"APIError raised - {str(e)}")
 
-        return response.design_id
+        return Version(response.design_instance_id)
 
 
     def listBlobs(self) -> dict:

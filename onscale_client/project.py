@@ -105,16 +105,16 @@ class Project(object):
 
         return branch_dict
 
-    def createBranch(self, design_title, design_description = None, design_goal = None) -> Branch:
+    def createBranch(self, title, description = None, goal = None) -> Branch:
         if ClientSettings.getInstance().debug_mode:
             print("createBranch: ")
 
         try:
             response = RestApi.design_create(
                 project_id = self.__data.project_id,
-                design_title = design_title,
-                design_description = design_description,
-                design_goal = design_goal)
+                design_title = title,
+                design_description = description,
+                design_goal = goal)
             # print(response)
         except rest_api.ApiError as e:
             print(f"APIError raised - {str(e)}")
