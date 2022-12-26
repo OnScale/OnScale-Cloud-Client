@@ -1020,3 +1020,16 @@ error in user_name or password or client_pools - {ce}"
         # TODO: create a project object out of response instead of re-calling /project/load
         return Project.Project(response.project_id)
 
+    # TODO: this should go into the Version class but the call to /job/init
+    # takes only the account id and the hpc_id, then we have to attach the simapi
+    # model, etc.
+    def createStudyGetId(self) -> str:
+        if ClientSettings.getInstance().debug_mode:
+            print("createStudy: ")
+
+        try:
+            job_id = RestApi.job_init(account_id=self.__current_account_id, hpc_id=self.__hpc_id)
+        except rest_api.ApiError as e:
+            print(f"APIError raised - {str(e)}")
+
+        return job_id
