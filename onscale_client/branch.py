@@ -7,10 +7,16 @@ import onscale_client.api.rest_api as rest_api
 from onscale_client.api.rest_api import rest_api as RestApi
 from onscale_client.common.client_settings import ClientSettings
 from onscale_client.api.files.file_util import hash_file
+from onscale_client.api.util import wait_for_blob, wait_for_child_blob
 
 import os
 
 import pdb
+
+from typing import List, Dict, Optional
+
+import pdb
+
 
 class Study:
     def __init__(
@@ -19,10 +25,58 @@ class Study:
     ):
         self.__data: Optional[datamodel.Job] = RestApi.job_load(id)
 
+    @property
+    def id(self) -> str:
+        return self.__data.job_id
 
-from typing import List, Dict, Optional
 
-import pdb
+    def __str__(self):
+        """string representation of Study object"""
+        return_str = "Study(\n"
+        return_str += f"    job_id={self.__data.job_id},\n"
+        return_str += f"    account_id={self.__data.account_id},\n"
+        return_str += f"    job_name={self.__data.job_name},\n"
+        return_str += f"    cores_required={self.__data.cores_required},\n"
+        return_str += f"    ram_estimate={self.__data.ram_estimate},\n"
+        return_str += f"    main_file={self.__data.main_file},\n"
+        return_str += f"    precision={self.__data.precision},\n"
+        return_str += f"    number_of_parts={self.__data.number_of_parts},\n"
+        return_str += f"    docker_tag={self.__data.docker_tag},\n"
+        return_str += f"    docker_tag_id={self.__data.docker_tag_id},\n"
+        return_str += f"    file_dependencies={self.__data.file_dependencies},\n"
+        return_str += f"    file_aliases={self.__data.file_aliases},\n"
+        return_str += f"    operation={self.__data.operation},\n"
+        return_str += f"    preprocessor={self.__data.preprocessor},\n"
+        return_str += f"    simulations={self.__data.simulations},\n"
+        return_str += f"    file_aliases={self.__data.file_aliases},\n"
+        return_str += f"    job_status={self.__data.job_status},\n"
+        return_str += f"    job_type={self.__data.job_type},\n"
+        return_str += f"    log_group={self.__data.log_group},\n"
+        return_str += f"    hpc_id={self.__data.hpc_id},\n"
+        return_str += f"    application={self.__data.application},\n"
+        return_str += f"    parent_job_id={self.__data.parent_job_id},\n"
+        return_str += f"    parent_job_id={self.__data.parent_job_id},\n"
+        return_str += f"    project_id={self.__data.project_id},\n"
+        return_str += f"    design_id={self.__data.design_id},\n"
+        return_str += f"    design_instance_id={self.__data.design_instance_id},\n"
+        return_str += f"    supervisor_id={self.__data.supervisor_id},\n"
+        return_str += f"    time_to_end={self.__data.time_to_end},\n"
+        return_str += f"    max_spend_ch={self.__data.max_spend_ch},\n"
+        return_str += f"    job_cost={self.__data.job_cost},\n"
+        return_str += f"    user_id={self.__data.user_id},\n"
+        return_str += f"    last_status={self.__data.last_status},\n"
+        return_str += f"    last_status_date={self.__data.last_status_date},\n"
+        return_str += f"    final_status={self.__data.final_status},\n"
+        return_str += f"    queued_status_date={self.__data.queued_status_date},\n"
+        return_str += f"    deleted_date={self.__data.deleted_date},\n"
+        return_str += f"    physics_types={self.__data.physics_types},\n"
+        return_str += f"    console_parameter_names={self.__data.console_parameter_names},\n"
+        return_str += f"    design_title={self.__data.design_title},\n"
+        return_str += f"    design_instance_title={self.__data.design_instance_title},\n"
+        return_str += f"    file_dependent_job_id_list={self.__data.file_dependent_job_id_list},\n"
+        return_str += ")"
+        return return_str
+
 
 
 class Version:
@@ -38,7 +92,7 @@ class Version:
         return self.__data.design_instance_id
 
     def __str__(self):
-        """string representation of Project object"""
+        """string representation of Version object"""
         return_str = "Version(\n"
         return_str += f"    design_instance_id={self.__data.design_instance_id},\n"
         return_str += f"    design_id={self.__data.design_id},\n"
@@ -86,6 +140,7 @@ class Version:
                 print("CAD file %s is already in the version (hash %s)" % (cad_file_path, cad_md5))
                 cad_blob_id = blob.blob_id
             elif mesh_file_name is None and blob.blob_type == datamodel.BlobType.MESHAUTO:
+                # TODO: store the file name in a dictionary CAD hash -> mesh name
                 print("CAD file already has an automatic mesh (%s)" % (blob.original_file_name))
                 mesh_file_name = blob.original_file_name
                 mesh_blob_id = blob.blob_id
@@ -103,9 +158,41 @@ class Version:
 
         return cad_blob_id
 
+    def getMeshName(self):
+        wait_for_blob(blob_type="MESHAUTO", object_id=self.__data.design_instance_id, timeout_secs=600)
 
+        response = RestApi.blob_list(self.__data.design_instance_id)
+        mesh_file_name = None
+        for blob in response:
+            if blob.blob_type == datamodel.BlobType.MESHAUTO:
+                mesh_file_name = blob.original_file_name
+                mesh_blob_id = blob.blob_id
+                mesh_hash = blob.hash
+                
+        return mesh_file_name
+    
+    def updateMeshName(self, simapi_file_path: str):
+        # Edit simapi file to include mesh file name for the mesh just created
+        # This is necessary because the mesh file name is generated dynamically from the mesh hash
+        # If the original code has a node on.meshes.MeshFile we replace the name
+        # If it does not have a mesh node, we add one
+        mesh_file_name = self.getMeshName()
+        has_mesh_node = False
+        with open(simapi_file_path, "r") as file:
+            simapi_file = file.read()
+        with open(simapi_file_path, "w") as file:
+            for line in simapi_file.split("\n"):
+                # check this line is not commented out
+                if "on.meshes.MeshFile" in line:
+                    has_mesh_node = True
+                    file.write(f'{line.split("(")[0]}("{mesh_file_name}")\n')
+                # this condition is needed to prevent changing the md5 sum of the file
+                elif line != "":
+                    file.write(f"{line}\n")
 
-
+            if has_mesh_node == False:
+                file.write('    # Automatic mesh filename\n')
+                file.write(f'    on.meshes.MeshFile("{mesh_file_name}")\n')
 
 class Branch(object):
     """Branch object
