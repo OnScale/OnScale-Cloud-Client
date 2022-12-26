@@ -10,10 +10,9 @@ from onscale_client.api.files.file_util import hash_file
 from onscale_client.api.util import wait_for_blob, wait_for_child_blob
 
 import os
-
-import pdb
-
+import json
 from typing import List, Dict, Optional
+
 
 import pdb
 
@@ -23,7 +22,7 @@ class Study:
         self,
         id: str,
     ):
-        self.__data: Optional[datamodel.Job] = RestApi.job_load(id)
+        self.__data: datamodel.Job = RestApi.job_load(id)
 
     @property
     def id(self) -> str:
@@ -84,7 +83,12 @@ class Version:
         self,
         id: str,
     ):
-        self.__data: Optional[datamodel.DesignInstance] = RestApi.design_instance_load(id)
+        self.__data: datamodel.DesignInstance = RestApi.design_instance_load(id)
+        self.cad_file_name: str = None
+        self.cad_blob_id: str = None
+        self.mesh_file_name: str = None
+        self.mesh_blob_id: str = None
+        self.mesh_hash: str = None
 
 
     @property
@@ -123,53 +127,63 @@ class Version:
             print(f"APIError raised - {str(e)}")
 
         return response
+    
+    def addCAD(self, cad_file_name):
+        if not os.path.exists(cad_file_name):
+            print("error: cannot find path '%s'" % cad_file_name)
 
-    def addCAD(self, cad_file_path):
-        # pdb.set_trace()
-        if not os.path.exists(cad_file_path):
-            print("error: cannot find paht '%s'" % cad_file_path)
-
-        cad_md5 = hash_file(cad_file_path)
+        cad_md5 = hash_file(cad_file_name)
+        self.cad_file_name = cad_file_name
 
         cad_blob_id = None
         mesh_file_name = None
 
         for blob in self.listBlobs():
-            print("%s %s" % (blob.blob_id, blob.hash))
             if cad_blob_id is None and blob.blob_type == datamodel.BlobType.CAD and cad_md5 == blob.hash:
-                print("CAD file %s is already in the version (hash %s)" % (cad_file_path, cad_md5))
+                print("CAD file %s is already in the version (hash %s)" % (cad_file_name, cad_md5))
                 cad_blob_id = blob.blob_id
             elif mesh_file_name is None and blob.blob_type == datamodel.BlobType.MESHAUTO:
                 # TODO: store the file name in a dictionary CAD hash -> mesh name
                 print("CAD file already has an automatic mesh (%s)" % (blob.original_file_name))
-                mesh_file_name = blob.original_file_name
-                mesh_blob_id = blob.blob_id
-                mesh_hash = blob.hash
+                self.mesh_file_name = blob.original_file_name
+                self.mesh_blob_id = blob.blob_id
+                self.mesh_hash = blob.hash
 
         if cad_blob_id is None:
-            print("CAD file %s is not in the version, uploading..." % (cad_file_path))
+            print("CAD file %s is not in the version, uploading..." % (cad_file_name))
             response = RestApi.blob_upload(
                 object_id = self.__data.design_instance_id,
                 object_type = datamodel.ObjectType1.DESIGNINSTANCE,
                 blob_type = datamodel.BlobType.CAD,
-                file = cad_file_path)
+                file = cad_file_name)
             print(response)
             cad_blob_id = response.blob_id
 
+        self.cad_blob_id = cad_blob_id
         return cad_blob_id
 
-    def getMeshName(self):
-        wait_for_blob(blob_type="MESHAUTO", object_id=self.__data.design_instance_id, timeout_secs=600)
+    def getCADName(self):
+        if self.cad_file_name == None:
+            for blob in self.listBlobs():
+                if cad_blob_id is None and blob.blob_type == datamodel.BlobType.CAD:
+                    self.cad_blob_id = blob.blob_id
+                    self.cad_file_name = blob.original_file_name
+                    
+        return self.cad_file_name
 
-        response = RestApi.blob_list(self.__data.design_instance_id)
-        mesh_file_name = None
-        for blob in response:
-            if blob.blob_type == datamodel.BlobType.MESHAUTO:
-                mesh_file_name = blob.original_file_name
-                mesh_blob_id = blob.blob_id
-                mesh_hash = blob.hash
+    def getMeshName(self):
+        if self.mesh_file_name == None:
+            wait_for_blob(blob_type="MESHAUTO", object_id=self.__data.design_instance_id, timeout_secs=600)
+
+            response = RestApi.blob_list(self.__data.design_instance_id)
+            mesh_file_name = None
+            for blob in response:
+                if blob.blob_type == datamodel.BlobType.MESHAUTO:
+                    self.mesh_file_name = blob.original_file_name
+                    self.mesh_blob_id = blob.blob_id
+                    self.mesh_hash = blob.hash
                 
-        return mesh_file_name
+        return self.mesh_file_name
     
     def updateMeshName(self, simapi_file_path: str):
         # Edit simapi file to include mesh file name for the mesh just created
@@ -193,6 +207,72 @@ class Version:
             if has_mesh_node == False:
                 file.write('    # Automatic mesh filename\n')
                 file.write(f'    on.meshes.MeshFile("{mesh_file_name}")\n')
+
+    def addSimMetadata(self, simapi_blob_id: str, simapi_file_md5: str):
+        sim_metadata_blob_id = None
+        response = RestApi.blob_child_list(blob_id = simapi_blob_id);
+        for blob in response:
+            if blob.blob_type == datamodel.BlobType.SIMMETADATA and simapi_file_md5 == blob.hash:
+                sim_metadata_blob_id = blob.blob_id
+                print("Simulation already has metadata associated (blob_id = %s)" % (sim_metadata_blob_id))
+
+        if sim_metadata_blob_id == None:
+            material_name = "Structural steel"
+            material_id = "4ff15ef0-2004-4e5f-a0d0-5624b34eda7e"
+            self.getCADName()
+            
+            sim_metadata = {
+                'camera': {},
+                'geometryBlob': {self.cad_file_name: self.cad_blob_id},
+                'materialBlob': {},
+                'materialCloud': {material_name: material_id},
+                'linkedJobFiles': {},
+                'cache': {},
+                'meshBlob': {self.mesh_file_name: self.mesh_blob_id}
+            }
+            metadata_file_path = "metadata.json"
+            with open(metadata_file_path, "w") as json_file:
+                json.dump(sim_metadata, json_file)
+                
+            print("Simulation does not have metadata, uploading...")
+            response = RestApi.blob_child_upload(
+                           parent_blob_id=simapi_blob_id,
+                           object_type=datamodel.ObjectType1.JOB,
+                           blob_type=datamodel.BlobType.SIMMETADATA,
+                           file=metadata_file_path,
+                       )
+            sim_metadata_blob_id = response.blob_id    
+
+        return sim_metadata_blob_id    
+                
+    def addSimapiBlob(self, simapi_file_path: str):
+        self.updateMeshName(simapi_file_path)
+        
+        # check if the SimAPI file is already there
+        simapi_file_md5 = hash_file(simapi_file_path)
+        response = RestApi.blob_list(object_id = self.__data.design_instance_id);
+        simapi_blob_id = None
+        for blob in response:
+            if blob.blob_type == datamodel.BlobType.SIMAPI and simapi_file_md5 == blob.hash:
+                simapi_blob_id = blob.blob_id
+                print("SimAPI file is already in the project (hash %s)" % (simapi_file_md5))
+
+        if simapi_blob_id is None:
+            print("SimAPI file is not in the project, uploading...")
+            response = RestApi.blob_upload(
+                object_id = self.__data.design_instance_id,
+                object_type = datamodel.ObjectType1.DESIGNINSTANCE,
+                blob_type = datamodel.BlobType.SIMAPI,
+                file = simapi_file_path)
+            simapi_blob_id = response.blob_id
+
+        # now we need to add the metadata (TODO: remove the need to)
+        self.addSimMetadata(simapi_blob_id, simapi_file_md5)
+
+        return simapi_blob_id
+        
+      
+    
 
 class Branch(object):
     """Branch object
@@ -290,7 +370,7 @@ class Branch(object):
         return Version(response.design_instance_id)
 
 
-    def listBlobs(self) -> dict:
+    def listBlobs(self) -> list:
         if ClientSettings.getInstance().debug_mode:
             print("listBlobs: ")
 
@@ -301,12 +381,12 @@ class Branch(object):
 
         return response
 
-    def addCAD(self, cad_file_path) -> str:
+    def addCAD(self, cad_file_name) -> str:
         # pdb.set_trace()
-        if not os.path.exists(cad_file_path):
-            print("error: cannot find path '%s'" % cad_file_path)
+        if not os.path.exists(cad_file_name):
+            print("error: cannot find path '%s'" % cad_file_name)
 
-        cad_md5 = hash_file(cad_file_path)
+        cad_md5 = hash_file(cad_file_name)
 
         cad_blob_id = None
         mesh_file_name = None
@@ -314,7 +394,7 @@ class Branch(object):
         for blob in self.listBlobs():
             print("%s %s" % (blob.blob_id, blob.hash))
             if cad_blob_id is None and blob.blob_type == datamodel.BlobType.CAD and cad_md5 == blob.hash:
-                print("CAD file %s is already in the branch (hash %s)" % (cad_file_path, cad_md5))
+                print("CAD file %s is already in the branch (hash %s)" % (cad_file_name, cad_md5))
                 cad_blob_id = blob.blob_id
             elif mesh_file_name is None and blob.blob_type == datamodel.BlobType.MESHAUTO:
                 print("CAD file already has an automatic mesh (%s)" % (blob.original_file_name))
@@ -323,12 +403,12 @@ class Branch(object):
                 mesh_hash = blob.hash
 
         if cad_blob_id is None:
-            print("CAD file %s is not in the branch, uploading..." % (cad_file_path))
+            print("CAD file %s is not in the branch, uploading..." % (cad_file_name))
             response = RestApi.blob_upload(
                 object_id = self.__data.design_id,
                 object_type = datamodel.ObjectType1.DESIGN,
                 blob_type = datamodel.BlobType.CAD,
-                file = cad_file_path)
+                file = cad_file_name)
             print(response)
             cad_blob_id = response.blob_id
 
