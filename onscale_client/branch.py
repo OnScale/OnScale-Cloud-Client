@@ -14,6 +14,11 @@ import json
 from typing import List, Dict, Optional
 
 
+# import abstract_socket
+# import abstract_listener
+from onscale_client.sockets.estimate_listener import EstimateListener
+
+
 import pdb
 
 
@@ -21,8 +26,19 @@ class Study:
     def __init__(
         self,
         id: str,
+        simapi_blob_id: str
     ):
         self.__data: datamodel.Job = RestApi.job_load(id)
+        self.estimate_listener: EstimateListener
+
+        self.job_id: str = id
+        self.account_id: str = self.__data.account_id
+        self.parent_job_id: str = self.__data.parent_job_id
+        self.project_id: str = self.__data.project_id
+        self.design_id: str = self.__data.design_id
+        self.design_instance_id: str = self.__data.design_instance_id
+        
+        self.simapi_blob_id = simapi_blob_id
 
     @property
     def id(self) -> str:
@@ -76,12 +92,45 @@ class Study:
         return_str += ")"
         return return_str
 
+    def estimate(self, portal: str, token: str) -> EstimateListener:
+        
+        if self.simapi_blob_id == None:
+            self.simapi_blob_id = self.getSimapiBlob()
+            
+        if self.simapi_blob_id == None:
+            print("error: version %s does not have simapi blob so it cannot be estimated", self.design_instance_id)
+            return None
+        
+        try:
+            response = RestApi.job_estimate(
+                job_id=self.__data.job_id,
+                solver="REFLEX",
+                blob_id=self.simapi_blob_id
+            )
+            self.estimate_id = response.estimate_id;
+            print("estimating: study_id = %s, estimate_id = %s" % (self.job_id ,self.estimate_id))
+    
+            # TODO: how come this guy does not need the estimate id?
+            self.estimate_listener = EstimateListener(portal=portal, token=token)
+            self.estimate_listener.listen(timeout_secs=3*60)
 
+        except TimeoutError:
+            print("Timed out waiting for estimate")
+            self.estimate_listener.error = 1
+        except rest_api.ApiError as e:
+            print(f"ApiError raised - {str(e)}")
+            self.estimate_listener.error = 2
+            
+        return self.estimate_listener
+        
+        
 
 class Version:
     def __init__(
         self,
         id: str,
+        hpc_id: str = None,
+        account_id: str = None,
     ):
         self.__data: datamodel.DesignInstance = RestApi.design_instance_load(id)
         self.cad_file_name: str = None
@@ -89,7 +138,19 @@ class Version:
         self.mesh_file_name: str = None
         self.mesh_blob_id: str = None
         self.mesh_hash: str = None
+        self.simapi_blob_id: str = None
 
+        self.design_instance_id: str = id
+        self.project_id: str = self.__data.project_id
+        self.design_id: str = self.__data.design_id
+        
+        if hpc_id != None and account_id != None:
+            self.hpc_id = hpc_id
+            self.account_id = account_id
+        else:
+            project = RestApi.project_load(project_id=self.project_id)
+            self.hpc_id = project.hpc_id
+            self.account_id = project.account_id
 
     @property
     def id(self) -> str:
@@ -114,13 +175,13 @@ class Version:
         return return_str
 
     def listStudies(self) -> dict:
-        # TODO: update this list by re-loading the design instance id
+        # re-load design instance to update the list of analysis
+        pdb.set_trace()
+        response = RestApi.design_instance_load(self.__data.design_instance_id)
+        self.__data.analysis_list = response.analysis_list
         return self.__data.analysis_list
 
     def listBlobs(self) -> dict:
-        if ClientSettings.getInstance().debug_mode:
-            print("listBlobs: ")
-
         try:
             response = RestApi.blob_list(object_id = self.__data.design_instance_id)
         except rest_api.ApiError as e:
@@ -245,10 +306,20 @@ class Version:
 
         return sim_metadata_blob_id    
                 
-    def addSimapiBlob(self, simapi_file_path: str):
+    def getSimapiBlob(self) -> str:
+        response = RestApi.blob_list(object_id = self.__data.design_instance_id);
+        simapi_blob_id = None
+        for blob in response:
+            if blob.blob_type == datamodel.BlobType.SIMAPI:
+                simapi_blob_id = blob.blob_id
+                
+        return simapi_blob_id
+        
+                
+    def addSimapiBlob(self, simapi_file_path: str) -> str:
+        # TODO: allow only one blob per version
         self.updateMeshName(simapi_file_path)
         
-        # check if the SimAPI file is already there
         simapi_file_md5 = hash_file(simapi_file_path)
         response = RestApi.blob_list(object_id = self.__data.design_instance_id);
         simapi_blob_id = None
@@ -268,11 +339,37 @@ class Version:
 
         # now we need to add the metadata (TODO: remove the need to)
         self.addSimMetadata(simapi_blob_id, simapi_file_md5)
+        self.simapi_blob_id = simapi_blob_id
 
         return simapi_blob_id
         
-      
-    
+    def getStudy(self, id: Optional[str] = None) -> Study:
+        """Load a study object from a version.
+
+        Args:
+            id: the id of the loaded study. If empty, the last study is returned.
+        """
+
+        if id == None:
+            # we need to re-load the branch object to have a fresh list of versions
+            studies = self.listStudies()
+            id = studies[len(studies)-1].analysis_id
+
+        study = Study(id, self.simapi_blob_id)
+        if study.design_instance_id != self.__data.design_instance_id:
+            print("study %s does not belong to version %s" % (id, self.__data.design_instance_id))
+
+        return study
+        
+        
+    def createStudy(self) -> Study:
+        try:
+            study_id = RestApi.job_init(account_id=self.account_id, hpc_id=self.hpc_id)
+        except rest_api.ApiError as e:
+            print(f"APIError raised - {str(e)}")
+
+        return Study(study_id, self.simapi_blob_id)
+
 
 class Branch(object):
     """Branch object
@@ -283,6 +380,7 @@ class Branch(object):
     def __init__(
         self,
         id: str,
+        hpc_id: Optional[str] = None
     ):
         """Constructor for the Branch object
 
@@ -291,6 +389,14 @@ class Branch(object):
         """
 
         self.__data: Optional[datamodel.Design] = RestApi.design_load(design_id=id)
+
+        self.design_id: str = id
+        self.project_id: str = self.__data.project_id
+        if hpc_id != None:
+            self.hpc_id = hpc_id
+        else:
+            project = RestApi.project_load(project_id=self.project_id)
+            self.hpc_id = project.hpc_id
 
 
     @property
@@ -332,11 +438,11 @@ class Branch(object):
         current_branch = Branch(self.__data.design_id)
         self.__data.design_instance_list = current_branch.__data.design_instance_list
 
-        version_dict = dict()
+        versions = dict()
         for version in self.__data.design_instance_list:
-            version_dict[version.design_instance_id] = version.design_instance_title
+            versions[version.design_instance_id] = version.design_instance_title
 
-        return version_dict
+        return versions
     
     def getVersion(self, id: Optional[str] = None):
         """Load a version object from a branch.
@@ -349,15 +455,19 @@ class Branch(object):
             # we need to re-load the branch object to have a fresh list of versions
             current_branch = Branch(self.__data.design_id)
             self.__data.design_instance_list = current_branch.__data.design_instance_list
-            return Version(self.__data.design_instance_list[len(self.__data.design_instance_list)-1].design_instance_id)
-        else:
-            # this is redundant, but ok
-            return Version(id)
+            id = self.__data.design_instance_list[len(self.__data.design_instance_list)-1].design_instance_id
 
-    def createVersion(self, title, description = None, goal = None) -> Version:
-        if ClientSettings.getInstance().debug_mode:
-            print("createVersion: ")
+        version = Version(id, hpc_id = self.hpc_id) if id != None else self.createVersion("first version")
+        if version.design_id != self.__data.design_id:
+            print("version %s does not belong to branch %s" % (id, project_id))
 
+        return version
+
+    def createVersion(self,
+                      title: str,
+                      hpc_id: str = None,
+                      description: str = None,
+                      goal:str = None) -> Version:
         try:
             response = RestApi.design_instance_create(
                 design_id = self.__data.design_id,
@@ -367,13 +477,10 @@ class Branch(object):
         except rest_api.ApiError as e:
             print(f"APIError raised - {str(e)}")
 
-        return Version(response.design_instance_id)
+        return Version(response.design_instance_id, hpc_id = hpc_id)
 
 
     def listBlobs(self) -> list:
-        if ClientSettings.getInstance().debug_mode:
-            print("listBlobs: ")
-
         try:
             response = RestApi.blob_list(object_id = self.__data.design_id)
         except rest_api.ApiError as e:

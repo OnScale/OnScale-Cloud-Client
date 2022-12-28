@@ -23,7 +23,7 @@ import onscale_client.branch as Branch
 
 # from datetime import datetime
 
-# from typing import List, Callable, Dict, Any, Optional
+from typing import List, Callable, Dict, Any, Optional
 
 # import os
 # if import_tqdm_notebook():
@@ -52,11 +52,13 @@ class Project(object):
         """
 
         self.__data: Optional[datamodel.Project] = RestApi.project_load(project_id=id)
+        self.account_id = self.__data.account_id
+        self.hpc_id = self.__data.hpc_id
 
 
     @property
     def id(self) -> str:
-        return self.__data.job_id
+        return self.__data.project_id
 
     def __str__(self):
         """string representation of Project object"""
@@ -161,7 +163,34 @@ class Project(object):
 
         return response.blob_id
 
+    def listBranches(self) -> dict:
 
+        response = RestApi.design_list(project_id = self.__data.project_id)
+
+        branches = dict()
+        for branch in response:
+            branches[branch.design_id] = branch.design_title
+
+        return branches
+
+        
+    def getBranch(self, id: Optional[str] = None):
+        """Load a branch object from a project.
+
+        Args:
+            id: the id of the loaded branch. If empty, the last branch is returned.
+        """
+
+        if id == None:
+            response = RestApi.design_list(project_id = self.__data.project_id)
+            for branch in response:
+                id = branch.design_id
+        
+        branch = Branch.Branch(id, self.__data.hpc_id) if id != None else self.createBranch("first branch")
+        if branch.project_id != self.__data.project_id:
+            print("branch %s does not belong to project %s" % (id, project_id))
+            
+        return branch
 
     # TODO
     # def rename(self, new_name: str):
