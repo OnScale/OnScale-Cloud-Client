@@ -8,8 +8,6 @@ from .abstract_listener import SocketListener
 from ..common.client_settings import ClientSettings
 from ..api.rest_api import ApiError
 
-import pdb
-
 
 class EstimateListener(SocketListener):
     """Listener for Estimation on the user socket"""
@@ -73,7 +71,6 @@ class EstimateListener(SocketListener):
     def results(self, data: Dict[str, Any]):
         print("estimate: finished")
         
-        # pdb.set_trace()
         self.type = data["type"]
         self.number_of_cores = data["numberOfCores"]
         self.estimated_memory = data["estimatedMemory"]

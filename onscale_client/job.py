@@ -1255,7 +1255,6 @@ class Job(object):
 
             self._estimate_progress_val = updated_progress
 
-        pdb.set_trace()
         if ClientSettings.getInstance().debug_mode:
             print(f"socket message : {msg}")
 
@@ -1288,7 +1287,6 @@ class Job(object):
                 if ClientSettings.getInstance().debug_mode:
                     print(msg["debug"])
             else:
-                pdb.set_trace()
                 if ClientSettings.getInstance().debug_mode:
                     print(f"socket message : {msg}")
 
@@ -1317,7 +1315,6 @@ class Job(object):
             parameters=msg["parameters"],
         )
 
-        pdb.set_trace()
         if ClientSettings.getInstance().debug_mode:
             print(f"socket message : {msg}")
 

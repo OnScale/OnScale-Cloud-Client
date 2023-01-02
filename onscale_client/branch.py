@@ -10,7 +10,9 @@ from onscale_client.api.files.file_util import hash_file
 from onscale_client.api.util import wait_for_blob, wait_for_child_blob
 
 import os
+import sys
 import json
+import time
 from typing import List, Dict, Optional
 
 
@@ -18,8 +20,6 @@ from typing import List, Dict, Optional
 # import abstract_listener
 from onscale_client.sockets.estimate_listener import EstimateListener
 
-
-import pdb
 
 
 # class Study:
@@ -156,8 +156,11 @@ class Version:
     def __init__(
         self,
         id: str,
+        title: str = None,
         hpc_id: str = None,
         account_id: str = None,
+        portal: str = None,
+        token: str = None
     ):
         self.__data: datamodel.DesignInstance = RestApi.design_instance_load(id)
         self.cad_file_name: str = None
@@ -172,7 +175,10 @@ class Version:
         self.design_id: str = self.__data.design_id
         self.job_id: str = None
         
+        self.estimate_object = dict()   # to avoid clash with estimate() method
         self.estimate_listener: EstimateListener
+        
+        self.title = title if title != None else self.__data.design_instance_title
         
         if hpc_id != None and account_id != None:
             self.hpc_id = hpc_id
@@ -181,6 +187,11 @@ class Version:
             project = RestApi.project_load(project_id=self.project_id)
             self.hpc_id = project.hpc_id
             self.account_id = project.account_id
+
+        self.portal = portal
+        self.token = token
+        
+        self.simulations: List[datamodel.Simulation]
 
     @property
     def id(self) -> str:
@@ -243,7 +254,7 @@ class Version:
                 object_type = datamodel.ObjectType1.DESIGNINSTANCE,
                 blob_type = datamodel.BlobType.CAD,
                 file = cad_file_name)
-            print(response)
+            # print(response)
             cad_blob_id = response.blob_id
 
         self.cad_file_name = cad_file_name
@@ -375,8 +386,7 @@ class Version:
         
     
 
-    def estimate(self, portal: str, token: str) -> Estimate:
-        
+    def estimate(self) -> Estimate:
         if self.simapi_blob_id == None:
             self.simapi_blob_id = self.getSimapiBlob()
             
@@ -388,15 +398,15 @@ class Version:
         
         try:
             response = RestApi.job_estimate(
-                job_id=self.job_id,
-                solver="REFLEX",
-                blob_id=self.simapi_blob_id
+                job_id = self.job_id,
+                solver = "REFLEX",
+                blob_id = self.simapi_blob_id
             )
             self.estimate_id = response.estimate_id;
-            print("estimating: study_id = %s, estimate_id = %s" % (self.job_id ,self.estimate_id))
+            print("estimating: job_id = %s, estimate_id = %s" % (self.job_id ,self.estimate_id))
     
             # TODO: how come this guy does not need the estimate id?
-            self.estimate_listener = EstimateListener(portal=portal, token=token)
+            self.estimate_listener = EstimateListener(portal=self.portal, token=self.token)
             self.estimate_listener.listen(timeout_secs=3*60)
 
         except TimeoutError:
@@ -406,7 +416,7 @@ class Version:
             print(f"ApiError raised - {str(e)}")
             return None
             
-        return Estimate(type = self.estimate_listener.type,
+        self.estimate_object = Estimate(type = self.estimate_listener.type,
             number_of_cores = self.estimate_listener.number_of_cores,
             estimated_memory = self.estimate_listener.estimated_memory,
             estimated_run_times = self.estimate_listener.estimated_run_times,
@@ -421,7 +431,95 @@ class Version:
             job_id = self.estimate_listener.job_id,
             estimate_id = self.estimate_listener.estimate_id,
             user_id = self.estimate_listener.user_id)
+        
+        return self.estimate
 
+    def run(self):
+        
+        # TODO: parametric
+        job_data = datamodel.Job(
+            accountId = self.account_id,
+            application = 'onscalepython',
+            coreHourEstimate = self.estimate_object.ch[0],
+            ramEstimate = self.estimate_object.estimated_memory[0],
+            coresRequired = self.estimate_object.number_of_cores[0],
+            designId = self.design_id,
+            designInstanceId = self.__data.design_instance_id,
+            dockerTag = "default",
+            fileAliases = [],
+            fileDependencies = [],
+            hpcId = self.hpc_id,
+            jobId = self.job_id,
+            jobName = self.title,
+            jobType = "from python client",
+            mainFile = f"{self.job_id}.json",
+            numberOfParts = self.estimate_object.parts_count[0],
+            operation = datamodel.Operation.REFLEX_MPI,
+            precision = datamodel.Precision.SINGLE,
+            preprocessor = datamodel.Preprocessor.NONE,
+            projectId = self.project_id,
+            simulationCount = 1,
+            simulations=[datamodel.Simulation(accountId = self.account_id,
+                                    consoleParameters = 'IGNORE',
+                                    consoleParameterNames = [],
+                                    jobId=self.job_id,
+                                    simulationIndex=0)
+                        ]
+            )
+        self.simulation_count = job_data.simulation_count
+        
+        print("submitting job_id = %s" % self.job_id)
+        try:
+            response = RestApi.job_submit_from_job(job_data)
+        
+        except TimeoutError:
+            print("Timed out waiting for job")
+            sys.exit()
+        except rest_api.ApiError as e:
+            print(f"ApiError raised - {str(e)}")
+            sys.exit()
+        
+        # print(response)
+        print("job submitted!")
+        
+        # poll the status until the status is finished
+        # TODO: use subscribe_to_progress
+        n = 0
+        while True:
+            print("polling status")
+            response = RestApi.job_load(job_id = self.job_id, exclude_sims = True, exclude_job_status = True)
+            print(response.last_status)
+            if response.last_status == "FINISHED":
+                break
+            elif n == 20:
+                print("time out")
+                break
+            n = n+1;
+            time.sleep(10)
+
+        # download results
+        try:
+            response = RestApi.job_simulation_list(
+                job_id=self.job_id,
+                page_number=0,
+                page_size=self.simulation_count,
+                descending_sort=False,
+                filter_by_status=None,
+                filters=[])
+        except rest_api.ApiError as e:
+            print(f"ApiError raised - {str(e)}")
+            print(f"Unable to populate simulation list for {self.job_id}")
+            return
+
+        self.simulations = response.simulations
+        for sim in self.simulations:
+            try:
+                response = RestApi.sim_files_list(job_id=self.job_id, sim_id=sim.simulation_id)
+                RestApi.sim_file_download(response, os.getcwd(), sim.simulation_index)
+            except rest_api.ApiError as e:
+                print(f"ApiError raised - {str(e)}")
+                raise            
+            
 
 class Branch(object):
     """Branch object
@@ -432,7 +530,9 @@ class Branch(object):
     def __init__(
         self,
         id: str,
-        hpc_id: Optional[str] = None
+        hpc_id: str = None,
+        portal: str = None,
+        token: str = None
     ):
         """Constructor for the Branch object
 
@@ -449,6 +549,9 @@ class Branch(object):
         else:
             project = RestApi.project_load(project_id=self.project_id)
             self.hpc_id = project.hpc_id
+
+        self.portal = portal
+        self.token = token
 
 
     @property
@@ -509,14 +612,14 @@ class Branch(object):
             self.__data.design_instance_list = current_branch.__data.design_instance_list
             id = self.__data.design_instance_list[len(self.__data.design_instance_list)-1].design_instance_id
 
-        version = Version(id, hpc_id = self.hpc_id) if id != None else self.createVersion("first version")
+        version = Version(id, hpc_id = self.hpc_id, portal = self.portal, token = self.token) if id != None else self.createVersion(title = "first version")
         if version.design_id != self.__data.design_id:
             print("version %s does not belong to branch %s" % (id, project_id))
 
         return version
 
     def createVersion(self,
-                      title: str,
+                      title: str = None,
                       hpc_id: str = None,
                       description: str = None,
                       goal:str = None) -> Version:
@@ -525,11 +628,11 @@ class Branch(object):
                 design_id = self.__data.design_id,
                 design_instance_title = title,
                 description = description)
-            print(response)
+            # print(response)
         except rest_api.ApiError as e:
             print(f"APIError raised - {str(e)}")
 
-        return Version(response.design_instance_id, hpc_id = hpc_id)
+        return Version(response.design_instance_id, title = title, hpc_id = hpc_id, portal = self.portal, token = self.token)
 
 
     def listBlobs(self) -> list:
@@ -541,7 +644,6 @@ class Branch(object):
         return response
 
     def addCAD(self, cad_file_name) -> str:
-        # pdb.set_trace()
         if not os.path.exists(cad_file_name):
             print("error: cannot find path '%s'" % cad_file_name)
 

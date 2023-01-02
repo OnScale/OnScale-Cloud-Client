@@ -44,6 +44,8 @@ class Project(object):
     def __init__(
         self,
         id: str,
+        portal: str = None,
+        token: str = None        
     ):
         """Constructor for the Project object
 
@@ -54,6 +56,8 @@ class Project(object):
         self.__data: Optional[datamodel.Project] = RestApi.project_load(project_id=id)
         self.account_id = self.__data.account_id
         self.hpc_id = self.__data.hpc_id
+        self.portal = portal
+        self.token = token
 
 
     @property
@@ -121,12 +125,11 @@ class Project(object):
         except rest_api.ApiError as e:
             print(f"APIError raised - {str(e)}")
 
-        return Branch.Branch(response.design_id)
+        return Branch.Branch(response.design_id, portal = self.portal, token = self.token)
 
 
 
     def listCADs(self) -> dict:
-        # pdb.set_trace()
         response = RestApi.blob_list(object_id = self.__data.project_id);
         dict_cad = dict()
         for blob in response:
@@ -136,7 +139,6 @@ class Project(object):
 
 
     def addCAD(self, cad_file_path):
-        # pdb.set_trace()
         if not exists(cad_file_path):
             print("error: cannot find paht '%s'" % cad_file_path)
 
@@ -186,7 +188,7 @@ class Project(object):
             for branch in response:
                 id = branch.design_id
         
-        branch = Branch.Branch(id, self.__data.hpc_id) if id != None else self.createBranch("first branch")
+        branch = Branch.Branch(id, hpc_id = self.__data.hpc_id, portal = self.portal, token = self.token) if id != None else self.createBranch("first branch")
         if branch.project_id != self.__data.project_id:
             print("branch %s does not belong to project %s" % (id, project_id))
             
