@@ -12,25 +12,15 @@ import copy
 import tempfile
 import base64
 
-import pdb
 import onscale_client.project as Project
 import onscale_client.branch as Branch
 
-# from shutil import copyfile
-# from onscale_client.estimate_data import EstimateData
-
-# from tabulate import tabulate
-
 from typing import List, Dict, Optional
-#
+
 import onscale_client.api.rest_api as rest_api
 import onscale_client.api.datamodel as datamodel
 from onscale_client.api.rest_api import rest_api as RestApi
-# from onscale_client.api.files.file_util import blob_type_from_file, maybe_makedirs
-# from onscale_client.api.util import wait_for_blob, wait_for_child_blob
 
-# from onscale_client.job import Job
-# from onscale_client.simulation import Simulation as SimulationData
 from onscale_client.account import Account
 from onscale_client.auth.cognito import Cognito
 from onscale_client.configure import (
@@ -48,17 +38,6 @@ from onscale_client.common.client_pools import (
 )
 from onscale_client.common.client_settings import ClientSettings, TEMP_DIR
 from onscale_client.common.misc import is_dev_token, is_uuid, OS_DEFAULT_PROFILE
-# from onscale_client.linked_file import LinkedFile
-
-# from onscale.tree import Simulation  # type: ignore
-# from onscale.visitors import (
-#     BlobsVisitor,  # type: ignore
-#     PythonVisitor,
-#     ParameterVisitor,
-#     ValidationVisitor,
-# )
-#
-# from onscale.reader import load_module, load_sims  # type: ignore
 
 class ClientLight(object):
     """The (light) OnScale Cloud Client class
@@ -1032,7 +1011,5 @@ error in user_name or password or client_pools - {ce}"
             response = RestApi.project_create(account_id=self.__current_account_id, hpc_id=self.__hpc_id, project_title=title)
         except rest_api.ApiError as e:
             print(f"APIError raised - {str(e)}")
-
-# Project(trace_id='729703114606183489', project_id='300eab68-6400-49a2-aaec-ba390a530e0f', account_id='5c013c08-c558-4c95-ac9a-6c943a1e9a60', hpc_id='dd5dd1a7-cc2e-4366-a7f1-c37b6f06f644', user_id='cb91351e-94d4-4d68-aa2f-ab773a7024e7', project_title='from createProject', project_goal=None, create_date=1671058178508, last_update=1671058178508, core_hour_used=0.0, design_list=[], user_id_list=None, last_update_by_me=None, my_access_type=None, archived=None)
 
         return Project.Project(response.project_id, portal = self.__portal_target, token = self._get_auth_token())
