@@ -1793,8 +1793,10 @@ error in user_name or password or client_pools - {ce}"
                 print("\n* Configuration Details ")
                 if ram is not None:
                     if ram > estimate_data.memory:
+                        required_ram = ram
                         table = [["RAM (overridden)", f"{ram}"]]
                     else:
+                        required_ram = estimate_data.memory
                         table = [["RAM", estimate_data.memory]]
                 else:
                     table = [["RAM", estimate_data.memory]]
@@ -1878,6 +1880,9 @@ error in user_name or password or client_pools - {ce}"
 
             main_file_name = f"{job.job_id}{self._input_from_operation(operation)}"
 
+            if ram is None:
+                required_ram = estimate_data.memory
+
             if linked_files:
                 dependencies = list()
                 aliases = list()
@@ -1895,7 +1900,7 @@ error in user_name or password or client_pools - {ce}"
                 job.submit(
                     job_type=job_type,
                     main_file=main_file_name,
-                    ram_estimate=estimate_data.memory,
+                    ram_estimate=required_ram,
                     cores_required=estimate_data.cores,
                     core_hour_estimate=estimate_data.cost,
                     number_of_parts=estimate_data.parts,
@@ -1911,7 +1916,7 @@ error in user_name or password or client_pools - {ce}"
                 job.submit(
                     job_type=job_type,
                     main_file=main_file_name,
-                    ram_estimate=estimate_data.memory,
+                    ram_estimate=required_ram,
                     cores_required=estimate_data.cores,
                     core_hour_estimate=estimate_data.cost,
                     number_of_parts=estimate_data.parts,
