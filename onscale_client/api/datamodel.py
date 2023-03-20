@@ -341,6 +341,7 @@ class Operation(Enum):
     ESTIMATE = 'ESTIMATE'
     REVIEW = 'REVIEW'
     BUILD = 'BUILD'
+    MAPDL_MPI = 'MAPDL_MPI'
 
 
 class Preprocessor(Enum):

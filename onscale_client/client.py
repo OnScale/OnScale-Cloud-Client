@@ -1246,6 +1246,7 @@ error in user_name or password or client_pools - {ce}"
             elif (
                 input_obj.endswith(".flxinp")
                 or input_obj.endswith(".json")
+                or input_obj.endswith(".pb")
                 or input_obj.find(".") == -1
             ):
                 return self.submit_solver_input_file(
